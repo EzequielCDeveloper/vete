@@ -17,12 +17,10 @@ services:
       DB_HOST: mariadb
       DB_PORT: "3306"
       DB_USER: mi_usuario_app
-      DB_PASS_FILE: /run/secrets/db_password
+      DB_PASS: ${DB_PASSWORD}
       DB_NAME: Veterinaria_pet_land
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGIN: https://veterinaria.ezequielcastellanosleyva.net
-    secrets:
-      - db_password
     ports:
       - "127.0.0.1:4000:4000"
     networks:
@@ -50,7 +48,3 @@ services:
 networks:
   vetcare-net:
     external: true
-
-secrets:
-  db_password:
-    file: ./secrets/db_password.txt
