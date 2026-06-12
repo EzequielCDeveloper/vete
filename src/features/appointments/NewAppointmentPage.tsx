@@ -280,12 +280,10 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                       Edad <span className="required">*</span>
                     </label>
                     <input
-                      type="number"
-                      min="0"
-                      max="100"
+                      type="text"
                       value={pacienteEdad}
                       onChange={(e) => setPacienteEdad(e.target.value)}
-                      placeholder="ej: 3"
+                      placeholder="ej: 3 años"
                       required
                     />
                   </div>
