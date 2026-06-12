@@ -15,11 +15,11 @@ exports.getAll = async (_req, res) => {
         `SELECT
           mh.id_medical_history AS recordId,
           ma.id_medical_appointment AS citaId,
-          ma.made_at AS fecha,
-          ma.hour AS hora,
+          ma.date_appointment AS fecha,
+          ma.time_appointment AS hora,
           vp.name AS procedimientoNombre,
-          mh.medical_notes AS notas,
-          COALESCE(mh.name, 'Historial') AS historialMedico
+          COALESCE(ma.additional_note, '') AS notas,
+          COALESCE(mh.medical_notes, '') AS historialMedico
         FROM Medical_history mh
         INNER JOIN Medical_appointment ma ON mh.id_medical_appointment = ma.id_medical_appointment
         INNER JOIN Veterian_procedures vp ON ma.id_veterian_procedure = vp.id_veterian_procedure
