@@ -27,7 +27,7 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    const { pacienteId, procedimientoId, fecha, hora, notas } = req.body;
+    const { pacienteId, procedimientoId, fecha, hora, notas, medicalRecordId } = req.body;
     if (!pacienteId || !procedimientoId || !fecha || !hora) {
       return error(res, 'Paciente, procedimiento, fecha y hora son obligatorios');
     }
@@ -44,6 +44,14 @@ exports.create = async (req, res) => {
       await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [
         Number(result?.id), req.user.id, req.body.historialNotas || null,
       ]);
+    }
+
+    // Link to an existing medical record if provided
+    if (medicalRecordId && result?.id) {
+      await pool.execute(
+        'UPDATE Medical_history SET id_medical_appointment = ? WHERE id_medical_history = ?',
+        [Number(result.id), Number(medicalRecordId)]
+      );
     }
 
     // ─── Audit log ────────────────────────────────────

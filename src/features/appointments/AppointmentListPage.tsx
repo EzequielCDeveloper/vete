@@ -140,6 +140,8 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
   };
 
   // After selecting a record in the modal → close selector, open notes modal
+  // NOTE: pendingHistoryAptId is intentionally NOT cleared here so the
+  // "Cambiar" button can re-open the selector with the same apt context.
   const handleRecordSelected = (record: MedicalRecord) => {
     setSelectedRecord(record);
     setShowSelector(false);
@@ -147,7 +149,6 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
       setHistoryModalId(pendingHistoryAptId);
       setHistoryNotas('');
       setHistorySuccess(null);
-      setPendingHistoryAptId(null);
     }
   };
 
@@ -162,7 +163,11 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
   const handleSaveToHistory = async () => {
     if (!historyModalId) return;
     try {
-      await medicalRecordApi.create({ citaId: historyModalId, notas: historyNotas || undefined });
+      await medicalRecordApi.create({
+        citaId: historyModalId,
+        notas: historyNotas || undefined,
+        medicalRecordId: selectedRecord?.id,
+      });
       setHistorySuccess('Cita guardada en el historial médico correctamente.');
       setTimeout(() => {
         setHistoryModalId(null);

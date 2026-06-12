@@ -252,7 +252,7 @@ export const medicalRecordApi = {
   getByPatient(patientId: string): Promise<MedicalRecord> {
     return request<MedicalRecord>(`/medical-records/patient/${patientId}`);
   },
-  create(data: { citaId: string; notas?: string }): Promise<MedicalRecord> {
+  create(data: { citaId: string; notas?: string; medicalRecordId?: string }): Promise<MedicalRecord> {
     return request<MedicalRecord>('/medical-records', {
       method: 'POST',
       body: JSON.stringify(data),

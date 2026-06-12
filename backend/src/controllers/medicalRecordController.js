@@ -20,13 +20,25 @@ exports.getByPatient = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    const { citaId, notas } = req.body;
+    const { citaId, notas, medicalRecordId } = req.body;
     if (!citaId) return error(res, 'ID de cita requerido');
 
-    const [rows] = await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [
-      Number(citaId), req.user.id, notas || null,
-    ]);
-    const result = rows[0]?.[0];
+    if (medicalRecordId) {
+      // Link existing appointment to existing medical record
+      await pool.execute(
+        'UPDATE Medical_history SET id_medical_appointment = ?, medical_notes = COALESCE(?, medical_notes) WHERE id_medical_history = ?',
+        [Number(citaId), notas || null, Number(medicalRecordId)]
+      );
+      await pool.execute(
+        'UPDATE Medical_appointment SET active_medical_history = 1 WHERE id_medical_appointment = ?',
+        [Number(citaId)]
+      );
+    } else {
+      // Original behavior: create a new medical record from appointment
+      const [rows] = await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [
+        Number(citaId), req.user.id, notas || null,
+      ]);
+    }
 
     // Build response with appointment + patient info
     const [aRows] = await pool.execute('CALL sp_get_appointment_by_id(?)', [Number(citaId)]);
@@ -36,7 +48,7 @@ exports.create = async (req, res) => {
     const patient = pRows[0]?.[0];
 
     json(res, {
-      id: String(result?.id || '0'),
+      id: String(apt?.id || citaId),
       pacienteId: apt ? String(apt.pacienteId) : '',
       pacienteNombre: patient?.nombre || '',
       pacienteEspecie: patient?.especie || '',

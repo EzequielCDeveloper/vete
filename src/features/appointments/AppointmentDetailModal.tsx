@@ -31,12 +31,16 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
   const [patientPropietario, setPatientPropietario] = useState('—');
   const [patientTelefono, setPatientTelefono] = useState('—');
 
+  // Patient ID from the loaded appointment
+  const [patientId, setPatientId] = useState<string | null>(null);
+
   // Medical history state
   const [showSelector, setShowSelector] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
   const [historialNotas, setHistorialNotas] = useState('');
   const [historySaving, setHistorySaving] = useState(false);
   const [historySuccess, setHistorySuccess] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
 
   useEffect(() => {
     procedureApi.getAll()
@@ -48,13 +52,14 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
       Promise.all([
         appointmentApi.getById(appointmentId),
         patientApi.getAll(),
-      ]).then(([apt, patients]) => {
+      ])      .then(([apt, patients]) => {
         setFecha(apt.fecha);
         setHora(apt.hora);
         setProcedimientoId(apt.procedimientoId);
         setEstado(apt.estado);
         setNotas(apt.notas || '');
         setError(null);
+        setPatientId(apt.pacienteId);
 
         const patient = patients.find(p => p.id === apt.pacienteId);
         if (patient) {
@@ -103,6 +108,7 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
 
   const handleHistoryClick = () => {
     setShowSelector(true);
+    setHistoryError(null);
   };
 
   const handleRecordSelected = (record: MedicalRecord) => {
@@ -115,11 +121,16 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
   const handleSaveToHistory = async () => {
     if (!appointmentId) return;
     setHistorySaving(true);
+    setHistoryError(null);
     try {
-      await medicalRecordApi.create({ citaId: appointmentId, notas: historialNotas || undefined });
+      await medicalRecordApi.create({
+        citaId: appointmentId,
+        notas: historialNotas || undefined,
+        medicalRecordId: selectedRecord?.id,
+      });
       setHistorySuccess(true);
-    } catch {
-      setError('Error al guardar en el historial');
+    } catch (err) {
+      setHistoryError(err instanceof Error ? err.message : 'Error al guardar en el historial');
     } finally {
       setHistorySaving(false);
     }
@@ -253,6 +264,9 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
                       </button>
                     </div>
                   )}
+                  {historyError && (
+                    <p className={styles.historyError}>{historyError}</p>
+                  )}
                   {!selectedRecord ? (
                     <button
                       type="button"
@@ -307,7 +321,7 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
         onClose={() => setShowSelector(false)}
         onConfirm={handleRecordSelected}
         pacienteNombre={patientNombre}
-        pacienteId={appointmentId ? undefined : undefined}
+        pacienteId={patientId || undefined}
         pacienteEspecie={patientEspecie}
       />
     </Modal>
