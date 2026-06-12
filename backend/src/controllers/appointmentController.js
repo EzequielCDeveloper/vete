@@ -39,18 +39,26 @@ exports.create = async (req, res) => {
     const result = rows[0]?.[0];
     const id = String(result?.id || '0');
 
-    // Save to medical history if requested
+    // Save to medical history if requested (creates new folder)
     if (req.body.guardarHistorial) {
-      await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [
+      const [hRows] = await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [
         Number(result?.id), req.user.id, req.body.historialNotas || null,
       ]);
+      // Also set the new FK: appointment points to folder
+      const folderId = hRows[0]?.[0]?.id;
+      if (folderId) {
+        await pool.execute(
+          'UPDATE Medical_appointment SET id_medical_history = ? WHERE id_medical_appointment = ?',
+          [Number(folderId), Number(result.id)]
+        );
+      }
     }
 
-    // Link to an existing medical record if provided
+    // Link to an existing medical folder if provided (new FK direction)
     if (medicalRecordId && result?.id) {
       await pool.execute(
-        'UPDATE Medical_history SET id_medical_appointment = ? WHERE id_medical_history = ?',
-        [Number(result.id), Number(medicalRecordId)]
+        'UPDATE Medical_appointment SET id_medical_history = ? WHERE id_medical_appointment = ?',
+        [Number(medicalRecordId), Number(result.id)]
       );
     }
 

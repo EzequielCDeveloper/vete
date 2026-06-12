@@ -7,23 +7,45 @@ exports.getAll = async (_req, res) => {
     const [rows] = await pool.query('CALL sp_get_medical_records()');
     const records = rows[0];
 
-    // Fetch citas for all medical records in one query (join via id_medical_appointment)
-    // Using Medical_history.id_medical_appointment → Medical_appointment
+    // Fetch citas — appointments linked to each Medical_history folder
+    // Uses the NEW FK: ma.id_medical_history → mh.id_medical_history (one folder → many citas)
+    // Falls back to OLD FK: mh.id_medical_appointment → ma.id_medical_appointment
     let citasMap;
     try {
       const [citasRows] = await pool.query(
-        `SELECT
-          mh.id_medical_history AS recordId,
-          ma.id_medical_appointment AS citaId,
-          ma.date_appointment AS fecha,
-          ma.time_appointment AS hora,
-          vp.name AS procedimientoNombre,
-          COALESCE(ma.additional_note, '') AS notas,
-          COALESCE(mh.medical_notes, '') AS historialMedico
-        FROM Medical_history mh
-        INNER JOIN Medical_appointment ma ON mh.id_medical_appointment = ma.id_medical_appointment
-        INNER JOIN Veterian_procedures vp ON ma.id_veterian_procedure = vp.id_veterian_procedure
-        WHERE mh.id_medical_appointment IS NOT NULL`
+        `SELECT recordId, citaId, fecha, hora, procedimientoNombre, notas, historialMedico FROM (
+          -- New FK: appointment points to folder
+          SELECT
+            mh.id_medical_history AS recordId,
+            ma.id_medical_appointment AS citaId,
+            ma.date_appointment AS fecha,
+            ma.time_appointment AS hora,
+            vp.name AS procedimientoNombre,
+            COALESCE(ma.additional_note, '') AS notas,
+            COALESCE(mh.medical_notes, '') AS historialMedico
+          FROM Medical_appointment ma
+          INNER JOIN Medical_history mh ON ma.id_medical_history = mh.id_medical_history
+          INNER JOIN Veterian_procedures vp ON ma.id_veterian_procedure = vp.id_veterian_procedure
+          WHERE ma.id_medical_history IS NOT NULL
+
+          UNION
+
+          -- Old FK: history points to appointment (legacy rows, not already covered above)
+          SELECT
+            mh.id_medical_history AS recordId,
+            ma.id_medical_appointment AS citaId,
+            ma.date_appointment AS fecha,
+            ma.time_appointment AS hora,
+            vp.name AS procedimientoNombre,
+            COALESCE(ma.additional_note, '') AS notas,
+            COALESCE(mh.medical_notes, '') AS historialMedico
+          FROM Medical_history mh
+          INNER JOIN Medical_appointment ma ON mh.id_medical_appointment = ma.id_medical_appointment
+          INNER JOIN Veterian_procedures vp ON ma.id_veterian_procedure = vp.id_veterian_procedure
+          WHERE mh.id_medical_appointment IS NOT NULL
+            AND ma.id_medical_history IS NULL
+        ) AS combined_citas
+        ORDER BY fecha DESC, hora DESC`
       );
       citasMap = new Map();
       for (const c of citasRows) {
@@ -66,20 +88,25 @@ exports.create = async (req, res) => {
     if (!citaId) return error(res, 'ID de cita requerido');
 
     if (medicalRecordId) {
-      // Link existing appointment to existing medical record
+      // Link existing appointment to existing medical folder
+      // New FK: appointment points to folder (one folder → many citas)
       await pool.execute(
-        'UPDATE Medical_history SET id_medical_appointment = ?, medical_notes = COALESCE(?, medical_notes) WHERE id_medical_history = ?',
-        [Number(citaId), notas || null, Number(medicalRecordId)]
-      );
-      await pool.execute(
-        'UPDATE Medical_appointment SET active_medical_history = 1 WHERE id_medical_appointment = ?',
-        [Number(citaId)]
+        'UPDATE Medical_appointment SET id_medical_history = ?, additional_note = COALESCE(?, additional_note), active_medical_history = 1 WHERE id_medical_appointment = ?',
+        [Number(medicalRecordId), notas || null, Number(citaId)]
       );
     } else {
       // Original behavior: create a new medical record from appointment
       const [rows] = await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [
         Number(citaId), req.user.id, notas || null,
       ]);
+      // Also set the new FK on the appointment for the new query to work
+      const folderId = rows[0]?.[0]?.id;
+      if (folderId) {
+        await pool.execute(
+          'UPDATE Medical_appointment SET id_medical_history = ? WHERE id_medical_appointment = ?',
+          [Number(folderId), Number(citaId)]
+        );
+      }
     }
 
     // Build response with appointment + patient info
