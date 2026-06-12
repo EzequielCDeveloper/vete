@@ -11,6 +11,10 @@ const logger = require('./helpers/logger');
 const routes = require('./routes/index');
 
 const app = express();
+app.set('trust proxy', 1);
+
+// Confiar en el proxy inverso (nginx) para obtener IP real
+app.set('trust proxy', 1);
 
 // ─── Global Middlewares ───────────────────────────────────────
 app.use(helmet());
