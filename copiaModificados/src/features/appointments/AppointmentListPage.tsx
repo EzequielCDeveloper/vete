@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FaCalendarCheck, FaFilter, FaTimes, FaHistory, FaFolderOpen, FaExchangeAlt } from 'react-icons/fa';
-import { appointmentApi, patientApi, procedureApi, userApi, medicalRecordApi } from '../../data/services/apiService';
-import type { Appointment, Patient, Procedure, MedicalRecord } from '../../data/services/apiService';
+import { FaCalendarCheck, FaFilter, FaTimes, FaHistory, FaFolderOpen } from 'react-icons/fa';
+import { mockService } from '../../data/mock/mockService';
+import type { Appointment, MedicalRecord } from '../../shared/types';
 import { Card, Badge, SearchBox, Breadcrumbs, Modal, FormSuccess } from '../../shared/ui';
 import { AppointmentDetailModal } from './AppointmentDetailModal';
 import MedicalHistorySelectorModal from '../medical/MedicalHistorySelectorModal';
@@ -13,9 +13,6 @@ interface AppointmentListPageProps {
 
 export default function AppointmentListPage({ onNavigate }: AppointmentListPageProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [patientsMap, setPatientsMap] = useState<Record<string, Patient>>({});
-  const [proceduresMap, setProceduresMap] = useState<Record<string, Procedure>>({});
-  const [usersMap, setUsersMap] = useState<Record<string, string>>({});
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -32,43 +29,31 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
   // Cancel confirmation state
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
 
-  // Medical history selector state
-  const [showSelector, setShowSelector] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
-  const [pendingHistoryAptId, setPendingHistoryAptId] = useState<string | null>(null);
-
   // Save to history modal state
   const [historyModalId, setHistoryModalId] = useState<string | null>(null);
   const [historyNotas, setHistoryNotas] = useState('');
   const [historySuccess, setHistorySuccess] = useState<string | null>(null);
+  const [showSelector, setShowSelector] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
 
-  const loadData = useCallback(async () => {
-    try {
-      const [apts, pats, procs, users] = await Promise.all([
-        appointmentApi.getAll(),
-        patientApi.getAll(),
-        procedureApi.getAll(),
-        userApi.getAll(),
-      ]);
-      setAppointments(apts);
-      setPatientsMap(Object.fromEntries(pats.map(p => [p.id, p])));
-      setProceduresMap(Object.fromEntries(procs.map(p => [p.id, p])));
-      setUsersMap(Object.fromEntries(users.map(u => [u.username, u.nombre])));
-    } catch {
-      // silent
-    }
+  const loadAppointments = useCallback(() => {
+    setAppointments(mockService.getAppointments());
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadAppointments();
+  }, [loadAppointments]);
 
   // Lookup helpers
-  const getPatientName = (id: string) => patientsMap[id]?.nombre || '—';
-  const getPatientEspecie = (id: string) => patientsMap[id]?.especie || '—';
-  const getPatientPropietario = (id: string) => patientsMap[id]?.propietario || '—';
-  const getProcedureName = (id: string) => proceduresMap[id]?.nombre || '—';
-  const getUserName = (username: string) => usersMap[username] || username;
+  const getPatientName = (id: string) => mockService.getPatientById(id)?.nombre || '—';
+  const getPatientEspecie = (id: string) => mockService.getPatientById(id)?.especie || '—';
+  const getPatientPropietario = (id: string) => mockService.getPatientById(id)?.propietario || '—';
+  const getProcedureName = (id: string) => mockService.getProcedureById(id)?.nombre || '—';
+
+  const getUserName = (username: string) => {
+    const user = mockService.getUsers().find((u) => u.username === username);
+    return user?.nombre || username;
+  };
 
   const getEstadoBadgeVariant = (estado: string) => {
     switch (estado) {
@@ -81,10 +66,16 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
 
   // Filter logic — AND across all active filters
   const filtered = appointments.filter((apt) => {
+    // Status filter
     if (statusFilter && apt.estado !== statusFilter) return false;
+
+    // Date filter (from advanced filters)
     if (filterFecha && apt.fecha !== filterFecha) return false;
+
+    // Hora filter
     if (filterHora && !apt.hora.toLowerCase().includes(filterHora.toLowerCase())) return false;
 
+    // General search filter (patient name or procedure)
     if (search) {
       const q = search.toLowerCase();
       const patientName = getPatientName(apt.pacienteId).toLowerCase();
@@ -92,6 +83,7 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
       if (!patientName.includes(q) && !procedureName.includes(q)) return false;
     }
 
+    // Advanced filters — resolved per appointment
     const patientName = getPatientName(apt.pacienteId).toLowerCase();
     const patientDueno = getPatientPropietario(apt.pacienteId).toLowerCase();
     const patientEspecie = getPatientEspecie(apt.pacienteId).toLowerCase();
@@ -105,22 +97,14 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
     return true;
   });
 
-  const handleComplete = async (id: string) => {
-    try {
-      await appointmentApi.complete(id);
-      await loadData();
-    } catch {
-      // silent
-    }
+  const handleComplete = (id: string) => {
+    mockService.completeAppointment(id);
+    loadAppointments();
   };
 
-  const handleCancel = async (id: string) => {
-    try {
-      await appointmentApi.cancel(id);
-      await loadData();
-    } catch {
-      // silent
-    }
+  const handleCancel = (id: string) => {
+    mockService.cancelAppointment(id);
+    loadAppointments();
   };
 
   const clearAdvancedFilters = () => {
@@ -132,37 +116,23 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
     setFilterFecha('');
   };
 
-  // Medical history flow: click "Historial" → open selector
-  const handleHistoryClick = (aptId: string) => {
-    setPendingHistoryAptId(aptId);
+  const openHistoryModal = (id: string) => {
+    setHistoryModalId(id);
+    setHistoryNotas('');
+    setHistorySuccess(null);
     setSelectedRecord(null);
     setShowSelector(true);
   };
 
-  // After selecting a record in the modal → close selector, open notes modal
-  const handleRecordSelected = (record: MedicalRecord) => {
-    setSelectedRecord(record);
+  const handleSelectorConfirm = (record: MedicalRecord) => {
     setShowSelector(false);
-    if (pendingHistoryAptId) {
-      setHistoryModalId(pendingHistoryAptId);
-      setHistoryNotas('');
-      setHistorySuccess(null);
-      setPendingHistoryAptId(null);
-    }
+    setSelectedRecord(record);
   };
 
-  const handleChangeRecord = () => {
-    // Close notes modal and reopen selector
-    setHistoryModalId(null);
-    if (pendingHistoryAptId) {
-      setShowSelector(true);
-    }
-  };
-
-  const handleSaveToHistory = async () => {
+  const handleSaveToHistory = () => {
     if (!historyModalId) return;
     try {
-      await medicalRecordApi.create({ citaId: historyModalId, notas: historyNotas || undefined });
+      mockService.saveAppointmentToHistory(historyModalId, historyNotas, selectedRecord?.id);
       setHistorySuccess('Cita guardada en el historial médico correctamente.');
       setTimeout(() => {
         setHistoryModalId(null);
@@ -174,12 +144,24 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
     }
   };
 
-  const handleCloseHistoryModal = () => {
-    setHistoryModalId(null);
-    setHistorySuccess(null);
-    if (pendingHistoryAptId) {
-      setPendingHistoryAptId(null);
-    }
+  const getHistoryPatientName = (): string => {
+    if (!historyModalId) return '';
+    const apt = mockService.getAppointmentById(historyModalId);
+    if (!apt) return '';
+    return getPatientName(apt.pacienteId);
+  };
+
+  const getHistoryPatientId = (): string => {
+    if (!historyModalId) return '';
+    const apt = mockService.getAppointmentById(historyModalId);
+    return apt?.pacienteId || '';
+  };
+
+  const getHistoryPatientEspecie = (): string => {
+    if (!historyModalId) return '';
+    const apt = mockService.getAppointmentById(historyModalId);
+    if (!apt) return '';
+    return getPatientEspecie(apt.pacienteId);
   };
 
   return (
@@ -360,7 +342,7 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
                         )}
                         <button
                           className={styles.actionBtn}
-                          onClick={() => handleHistoryClick(apt.id)}
+                          onClick={() => openHistoryModal(apt.id)}
                         >
                           <FaHistory /> Historial
                         </button>
@@ -405,23 +387,13 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
       <AppointmentDetailModal
         appointmentId={detailId}
         onClose={() => setDetailId(null)}
-        onSaved={loadData}
-      />
-
-      {/* Medical History Selector Modal */}
-      <MedicalHistorySelectorModal
-        isOpen={showSelector}
-        onClose={() => { setShowSelector(false); setPendingHistoryAptId(null); }}
-        onConfirm={handleRecordSelected}
-        pacienteNombre={pendingHistoryAptId ? getPatientName(appointments.find(a => a.id === pendingHistoryAptId)?.pacienteId || '') : undefined}
-        pacienteId={pendingHistoryAptId ? appointments.find(a => a.id === pendingHistoryAptId)?.pacienteId : undefined}
-        pacienteEspecie={pendingHistoryAptId ? getPatientEspecie(appointments.find(a => a.id === pendingHistoryAptId)?.pacienteId || '') : undefined}
+        onSaved={loadAppointments}
       />
 
       {/* Save to History Modal */}
       <Modal
-        isOpen={historyModalId !== null}
-        onClose={handleCloseHistoryModal}
+        isOpen={historyModalId !== null && !showSelector}
+        onClose={() => { setHistoryModalId(null); setHistorySuccess(null); setSelectedRecord(null); }}
         title="Guardar en Historial Médico"
         size="md"
       >
@@ -429,14 +401,29 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
           <FormSuccess message={historySuccess} />
         ) : (
           <div>
-            {selectedRecord && (
-              <div className={styles.selectedRecordBadge}>
-                <FaFolderOpen /> Historial: <strong>{selectedRecord.nombre || selectedRecord.pacienteNombre}</strong>
-                <button type="button" className={styles.changeRecordBtn} onClick={handleChangeRecord}>
-                  <FaExchangeAlt /> Cambiar
-                </button>
-              </div>
-            )}
+            <p className={styles.historyInfo}>
+              Guardando cita para: <strong>{getHistoryPatientName()}</strong>
+            </p>
+
+            {/* Show selected record name */}
+            <div className={styles.selectedRecordBadge}>
+              <FaFolderOpen />
+              <span>
+                {selectedRecord
+                  ? `Historial: ${selectedRecord.nombre}`
+                  : 'Se creará un nuevo historial médico'}
+              </span>
+              <button
+                className={styles.changeRecordBtn}
+                onClick={() => {
+                  setShowSelector(true);
+                  setHistorySuccess(null);
+                }}
+              >
+                Cambiar
+              </button>
+            </div>
+
             <div className={styles.formGroup}>
               <label className={styles.label}>Notas para el historial médico</label>
               <textarea
@@ -451,13 +438,22 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
               <button className={styles.btnPrimary} onClick={handleSaveToHistory}>
                 <FaHistory /> Guardar en Historial
               </button>
-              <button className={styles.btnSecondary} onClick={handleCloseHistoryModal}>
+              <button className={styles.btnSecondary} onClick={() => { setHistoryModalId(null); setHistorySuccess(null); setSelectedRecord(null); }}>
                 Cancelar
               </button>
             </div>
           </div>
         )}
       </Modal>
+
+      <MedicalHistorySelectorModal
+        isOpen={showSelector}
+        onClose={() => { setShowSelector(false); setHistoryModalId(null); setSelectedRecord(null); }}
+        onConfirm={handleSelectorConfirm}
+        pacienteNombre={getHistoryPatientName()}
+        pacienteId={getHistoryPatientId()}
+        pacienteEspecie={getHistoryPatientEspecie()}
+      />
     </div>
   );
 }

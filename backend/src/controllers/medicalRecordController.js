@@ -49,6 +49,36 @@ exports.create = async (req, res) => {
   } catch (err) { serverError(res, err); }
 };
 
+exports.createStandalone = async (req, res) => {
+  try {
+    const { nombre, pacienteId, pacienteNombre, pacienteEspecie } = req.body;
+
+    const [rows] = await pool.execute('CALL sp_create_medical_record(?,?,?,?,?,?)', [
+      nombre,
+      Number(pacienteId),
+      pacienteNombre,
+      pacienteEspecie || '',
+      req.user.id,
+      req.user.username,
+    ]);
+    const result = rows[0]?.[0];
+    const id = String(result?.id || '0');
+
+    json(res, {
+      id,
+      pacienteId: String(pacienteId),
+      pacienteNombre,
+      pacienteEspecie: pacienteEspecie || '',
+      nombre,
+      notas: '',
+      citas: [],
+      fechaCreacion: new Date().toISOString().split('T')[0],
+      ultimaActualizacion: new Date().toISOString().split('T')[0],
+      createdBy: req.user.username,
+    }, 201);
+  } catch (err) { serverError(res, err); }
+};
+
 exports.getCitasByPatient = async (req, res) => {
   try {
     const [rows] = await pool.execute('CALL sp_get_history_citas(?)', [Number(req.params.patientId)]);

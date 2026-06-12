@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FaFolderOpen, FaCalendarAlt, FaChevronDown, FaChevronUp, FaHistory, FaFilter, FaTimes } from 'react-icons/fa';
-import { medicalRecordApi, userApi } from '../../data/services/apiService';
-import type { MedicalRecord } from '../../data/services/apiService';
+import { mockService } from '../../data/mock/mockService';
+import type { MedicalRecord } from '../../shared/types';
 import { Card, Badge, Breadcrumbs, SearchBox } from '../../shared/ui';
 import { AppointmentDetailModal } from '../appointments/AppointmentDetailModal';
 import styles from './MedicalHistoryPage.module.css';
@@ -12,86 +12,83 @@ interface MedicalHistoryPageProps {
 
 export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPageProps) {
   const [records, setRecords] = useState<MedicalRecord[]>([]);
-  const [usersMap, setUsersMap] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detailCitaId, setDetailCitaId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
-  // Advanced filter state (no dueño filter — medical records don't have propietario info)
+  // Advanced filters
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filterAnimal, setFilterAnimal] = useState('');
+  const [filterDueno, setFilterDueno] = useState('');
   const [filterEspecie, setFilterEspecie] = useState('');
   const [filterProcedimiento, setFilterProcedimiento] = useState('');
   const [filterHora, setFilterHora] = useState('');
   const [filterFecha, setFilterFecha] = useState('');
 
-  const loadRecords = useCallback(async () => {
-    try {
-      const [recs, users] = await Promise.all([
-        medicalRecordApi.getAll(),
-        userApi.getAll(),
-      ]);
-      setRecords(recs);
-      setUsersMap(Object.fromEntries(users.map(u => [u.username, u.nombre])));
-    } catch {
-      // silent
-    }
+  const loadRecords = useCallback(() => {
+    setRecords(mockService.getMedicalRecords());
   }, []);
 
   useEffect(() => {
     loadRecords();
   }, [loadRecords]);
 
-  const getUserName = (username: string) => usersMap[username] || username;
-
-  const toggleExpand = (id: string) => {
-    setExpandedId(prev => prev === id ? null : id);
-  };
-
-  const clearAdvancedFilters = () => {
-    setFilterAnimal('');
-    setFilterEspecie('');
-    setFilterProcedimiento('');
-    setFilterHora('');
-    setFilterFecha('');
-  };
-
-  // Filter logic — AND across all active filters
   const filteredRecords = records.filter((r) => {
-    // Basic search
+    // General search
     if (search) {
       const q = search.toLowerCase();
       const matchesSearch =
-        (r.nombre || '').toLowerCase().includes(q) ||
+        r.nombre.toLowerCase().includes(q) ||
         r.pacienteNombre.toLowerCase().includes(q) ||
         r.pacienteEspecie.toLowerCase().includes(q) ||
         r.createdBy.toLowerCase().includes(q);
       if (!matchesSearch) return false;
     }
 
-    // Advanced filters
+    // Advanced filters — record level
     if (filterAnimal && !r.pacienteNombre.toLowerCase().includes(filterAnimal.toLowerCase())) return false;
     if (filterEspecie && !r.pacienteEspecie.toLowerCase().includes(filterEspecie.toLowerCase())) return false;
-    if (filterFecha && r.fechaCreacion !== filterFecha) return false;
 
-    // Procedimiento filter — check citas array
-    if (filterProcedimiento && r.citas) {
-      const hasProcedure = r.citas.some(c =>
-        c.procedimientoNombre.toLowerCase().includes(filterProcedimiento.toLowerCase())
-      );
-      if (!hasProcedure) return false;
+    // Dueño — lookup patient
+    if (filterDueno) {
+      const propietario = getPatientPropietario(r.pacienteId).toLowerCase();
+      if (!propietario.includes(filterDueno.toLowerCase())) return false;
     }
 
-    // Hora filter — check citas array
-    if (filterHora && r.citas) {
-      const hasHora = r.citas.some(c =>
-        c.hora.toLowerCase().includes(filterHora.toLowerCase())
-      );
-      if (!hasHora) return false;
+    // Citas-level filters — check if ANY cita in the record matches
+    if (filterProcedimiento || filterHora || filterFecha) {
+      if (r.citas.length === 0) return false;
+      const hasMatchingCita = r.citas.some((c) => {
+        if (filterProcedimiento && !c.procedimientoNombre.toLowerCase().includes(filterProcedimiento.toLowerCase())) return false;
+        if (filterHora && !c.hora.toLowerCase().includes(filterHora.toLowerCase())) return false;
+        if (filterFecha && c.fecha !== filterFecha) return false;
+        return true;
+      });
+      if (!hasMatchingCita) return false;
     }
 
     return true;
   });
+
+  const getUserName = (username: string) => {
+    const user = mockService.getUsers().find((u) => u.username === username);
+    return user?.nombre || username;
+  };
+
+  const getPatientPropietario = (id: string) => mockService.getPatientById(id)?.propietario || '';
+
+  const clearAdvancedFilters = () => {
+    setFilterAnimal('');
+    setFilterDueno('');
+    setFilterEspecie('');
+    setFilterProcedimiento('');
+    setFilterHora('');
+    setFilterFecha('');
+  };
+
+  const toggleExpand = (id: string) => {
+    setExpandedId(prev => prev === id ? null : id);
+  };
 
   return (
     <div>
@@ -126,7 +123,7 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
         </Card>
       ) : (
         <>
-          {/* Search + Filter toolbar */}
+          {/* Search bar */}
           <div className={styles.searchSection}>
             <SearchBox
               value={search}
@@ -142,61 +139,72 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
           </div>
 
           {showAdvancedFilters && (
-            <div className={styles.advancedFilters}>
-              <div className={styles.filterRow}>
-                <div className={styles.filterField}>
-                  <label>Animal</label>
-                  <input
-                    type="text"
-                    value={filterAnimal}
-                    onChange={(e) => setFilterAnimal(e.target.value)}
-                    placeholder="Nombre del paciente"
-                  />
+            <Card className={styles.filtersCard}>
+              <div className={styles.advancedFilters}>
+                <div className={styles.filterRow}>
+                  <div className={styles.filterField}>
+                    <label>Animal</label>
+                    <input
+                      type="text"
+                      value={filterAnimal}
+                      onChange={(e) => setFilterAnimal(e.target.value)}
+                      placeholder="Nombre del paciente"
+                    />
+                  </div>
+                  <div className={styles.filterField}>
+                    <label>Dueño</label>
+                    <input
+                      type="text"
+                      value={filterDueno}
+                      onChange={(e) => setFilterDueno(e.target.value)}
+                      placeholder="Nombre del propietario"
+                    />
+                  </div>
+                  <div className={styles.filterField}>
+                    <label>Especie</label>
+                    <input
+                      type="text"
+                      value={filterEspecie}
+                      onChange={(e) => setFilterEspecie(e.target.value)}
+                      placeholder="Canino, Felino..."
+                    />
+                  </div>
                 </div>
-                <div className={styles.filterField}>
-                  <label>Especie</label>
-                  <input
-                    type="text"
-                    value={filterEspecie}
-                    onChange={(e) => setFilterEspecie(e.target.value)}
-                    placeholder="Canino, Felino..."
-                  />
+                <div className={styles.filterRow}>
+                  <div className={styles.filterField}>
+                    <label>Procedimiento</label>
+                    <input
+                      type="text"
+                      value={filterProcedimiento}
+                      onChange={(e) => setFilterProcedimiento(e.target.value)}
+                      placeholder="Nombre del procedimiento"
+                    />
+                  </div>
+                  <div className={styles.filterField}>
+                    <label>Hora</label>
+                    <input
+                      type="text"
+                      value={filterHora}
+                      onChange={(e) => setFilterHora(e.target.value)}
+                      placeholder="ej: 10:00"
+                    />
+                  </div>
+                  <div className={styles.filterField}>
+                    <label>Fecha</label>
+                    <input
+                      type="date"
+                      value={filterFecha}
+                      onChange={(e) => setFilterFecha(e.target.value)}
+                    />
+                  </div>
                 </div>
-                <div className={styles.filterField}>
-                  <label>Fecha</label>
-                  <input
-                    type="date"
-                    value={filterFecha}
-                    onChange={(e) => setFilterFecha(e.target.value)}
-                  />
+                <div className={styles.filterActions}>
+                  <button className={styles.clearFilters} onClick={clearAdvancedFilters}>
+                    <FaTimes /> Limpiar filtros
+                  </button>
                 </div>
               </div>
-              <div className={styles.filterRow}>
-                <div className={styles.filterField}>
-                  <label>Procedimiento</label>
-                  <input
-                    type="text"
-                    value={filterProcedimiento}
-                    onChange={(e) => setFilterProcedimiento(e.target.value)}
-                    placeholder="Nombre del procedimiento"
-                  />
-                </div>
-                <div className={styles.filterField}>
-                  <label>Hora</label>
-                  <input
-                    type="text"
-                    value={filterHora}
-                    onChange={(e) => setFilterHora(e.target.value)}
-                    placeholder="ej: 10:00"
-                  />
-                </div>
-              </div>
-              <div className={styles.filterActions}>
-                <button className={styles.clearFilters} onClick={clearAdvancedFilters}>
-                  <FaTimes /> Limpiar filtros
-                </button>
-              </div>
-            </div>
+            </Card>
           )}
 
           {filteredRecords.length === 0 ? (
@@ -208,14 +216,14 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
                   <div className={styles.recordHeader} onClick={() => toggleExpand(record.id)}>
                     <div className={styles.recordInfo}>
                       <h4 className={styles.patientName}>
-                        <FaFolderOpen className={styles.patientIcon} /> {record.nombre || record.pacienteNombre}
+                        <FaFolderOpen className={styles.patientIcon} /> {record.nombre}
                       </h4>
-                      <Badge variant="info">{record.pacienteNombre}</Badge>
-                      <Badge variant="info">{record.pacienteEspecie}</Badge>
+              <Badge variant="info">{record.pacienteNombre}</Badge>
+                  <Badge variant="info">{record.pacienteEspecie}</Badge>
                     </div>
                     <div className={styles.recordMeta}>
                       <span className={styles.metaItem}>
-                        {record.citas?.length || 0} cita{(record.citas?.length || 0) !== 1 ? 's' : ''}
+                        {record.citas.length} cita{record.citas.length !== 1 ? 's' : ''}
                       </span>
                       <span className={styles.metaDivider}>|</span>
                       <span className={styles.metaItem}>Creado: {record.fechaCreacion}</span>
@@ -233,7 +241,7 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
                     </button>
                   </div>
 
-                  {expandedId === record.id && (record.citas?.length || 0) > 0 && (
+                  {expandedId === record.id && (
                     <div className={styles.citasList}>
                       <h5 className={styles.citasTitle}>
                         <FaCalendarAlt /> Citas guardadas

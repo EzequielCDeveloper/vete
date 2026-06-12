@@ -33,6 +33,7 @@ const createAppointmentSchema = z.object({
   notas: z.string().optional().nullable(),
   guardarHistorial: z.boolean().optional(),
   historialNotas: z.string().optional().nullable(),
+  medicalRecordId: z.coerce.number().int().positive().optional(),
 });
 
 const updateAppointmentSchema = z.object({
@@ -67,6 +68,13 @@ const medicalRecordSchema = z.object({
   notas: z.string().optional().nullable(),
 });
 
+const standaloneMedicalRecordSchema = z.object({
+  nombre: z.string().min(1, 'El nombre es obligatorio'),
+  pacienteId: z.coerce.number().int().positive('ID de paciente inválido'),
+  pacienteNombre: z.string().min(1, 'El nombre del paciente es obligatorio'),
+  pacienteEspecie: z.string().optional().default(''),
+});
+
 // ─── Password Change ───────────────────────────────────────────
 
 const changeOwnPasswordSchema = z.object({
@@ -85,6 +93,7 @@ module.exports = {
   procedureSchema,
   createUserSchema,
   medicalRecordSchema,
+  standaloneMedicalRecordSchema,
   changeOwnPasswordSchema,
   changeUserPasswordSchema,
 };

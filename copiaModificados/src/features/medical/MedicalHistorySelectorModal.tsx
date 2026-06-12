@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FaPlus, FaCheck, FaTimes, FaFolderOpen } from 'react-icons/fa';
-import { medicalRecordApi } from '../../data/services/apiService';
-import type { MedicalRecord } from '../../data/services/apiService';
+import { mockService } from '../../data/mock/mockService';
+import type { MedicalRecord } from '../../shared/types';
 import { Modal, SearchBox } from '../../shared/ui';
 import styles from './MedicalHistorySelectorModal.module.css';
 
@@ -30,13 +30,10 @@ export default function MedicalHistorySelectorModal({
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [createError, setCreateError] = useState('');
-  const [creatingLoading, setCreatingLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      medicalRecordApi.getAll()
-        .then(setRecords)
-        .catch(() => setRecords([]));
+      setRecords(mockService.getMedicalRecords());
       setSearch('');
       setSelectedId(null);
       setCreating(false);
@@ -49,7 +46,7 @@ export default function MedicalHistorySelectorModal({
     if (!search) return true;
     const q = search.toLowerCase();
     return (
-      (r.nombre || '').toLowerCase().includes(q) ||
+      r.nombre.toLowerCase().includes(q) ||
       r.pacienteNombre.toLowerCase().includes(q) ||
       r.pacienteEspecie.toLowerCase().includes(q)
     );
@@ -59,7 +56,14 @@ export default function MedicalHistorySelectorModal({
     setSelectedId((prev) => (prev === id ? null : id));
   };
 
-  const handleConfirmCreate = async () => {
+  const handleCreateNew = () => {
+    setCreating(true);
+    setNewName('');
+    setCreateError('');
+    setSelectedId(null);
+  };
+
+  const handleConfirmCreate = () => {
     if (!newName.trim()) {
       setCreateError('Debe ingresar un nombre para el historial.');
       return;
@@ -68,40 +72,25 @@ export default function MedicalHistorySelectorModal({
       setCreateError('Error: no se pudo identificar el paciente.');
       return;
     }
-
-    setCreatingLoading(true);
-    setCreateError('');
-
-    try {
-      const created = await medicalRecordApi.createStandalone({
-        nombre: newName.trim(),
-        pacienteId,
-        pacienteNombre: propPacienteNombre || '',
-        pacienteEspecie: propPacienteEspecie || '',
-      });
-
-      // Refresh records list and auto-select the new record
-      const updatedRecords = await medicalRecordApi.getAll();
-      setRecords(updatedRecords);
-      onConfirm(created);
-      onClose();
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Error al crear el historial');
-    } finally {
-      setCreatingLoading(false);
-    }
+    
+    const currentUser = mockService.getCurrentUser();
+    const newRecord = mockService.createMedicalRecordWithName({
+      nombre: newName.trim(),
+      pacienteId: pacienteId,
+      pacienteNombre: propPacienteNombre || '',
+      pacienteEspecie: propPacienteEspecie || '',
+      createdBy: currentUser?.username || 'unknown',
+    });
+    
+    setCreating(false);
+    setRecords(mockService.getMedicalRecords());
+    onConfirm(newRecord);
   };
 
   const handleConfirm = () => {
     if (!selectedId) return;
     const record = records.find((r) => r.id === selectedId);
     if (record) onConfirm(record);
-  };
-
-  const handleCreateNew = () => {
-    setCreating(true);
-    setNewName('');
-    setCreateError('');
   };
 
   // If in creation mode, show name input
@@ -111,7 +100,7 @@ export default function MedicalHistorySelectorModal({
         <div className={styles.container}>
           <div className={styles.header}>
             <p className={styles.desc}>
-              Complete el nombre para crear un nuevo historial médico independiente.
+              Ingrese un nombre para la carpeta de historial médico.
             </p>
           </div>
 
@@ -124,20 +113,15 @@ export default function MedicalHistorySelectorModal({
               onChange={(e) => { setNewName(e.target.value); setCreateError(''); }}
               placeholder="ej: Historial de Luna - 2026"
               autoFocus
-              disabled={creatingLoading}
             />
             {createError && <p className={styles.createError}>{createError}</p>}
           </div>
 
           <div className={styles.actions}>
-            <button
-              className={styles.createConfirmBtn}
-              onClick={handleConfirmCreate}
-              disabled={creatingLoading}
-            >
-              {creatingLoading ? 'Creando...' : <><FaPlus /> Crear Historial</>}
+            <button className={styles.createConfirmBtn} onClick={handleConfirmCreate}>
+              <FaPlus /> Crear Historial
             </button>
-            <button className={styles.cancelBtn} onClick={() => setCreating(false)} disabled={creatingLoading}>
+            <button className={styles.cancelBtn} onClick={() => setCreating(false)}>
               <FaTimes /> Volver
             </button>
           </div>
@@ -152,7 +136,7 @@ export default function MedicalHistorySelectorModal({
       <div className={styles.container}>
         <div className={styles.header}>
           <p className={styles.desc}>
-            Seleccione un historial existente para{' '}
+            Seleccione un historial existente o cree uno nuevo para{' '}
             <strong>{propPacienteNombre || 'el paciente'}</strong>.
           </p>
         </div>
@@ -163,7 +147,7 @@ export default function MedicalHistorySelectorModal({
             onChange={setSearch}
             placeholder="Buscar por nombre de historial o paciente..."
           />
-          <button className={styles.createBtn} onClick={handleCreateNew} type="button">
+          <button className={styles.createBtn} onClick={handleCreateNew}>
             <FaPlus /> Crear Historial
           </button>
         </div>
@@ -185,12 +169,12 @@ export default function MedicalHistorySelectorModal({
                 <div className={styles.recordInfo}>
                   <FaFolderOpen className={styles.recordIcon} />
                   <div>
-                    <span className={styles.recordName}>{record.nombre || record.pacienteNombre}</span>
+                    <span className={styles.recordName}>{record.nombre}</span>
                     <span className={styles.recordSub}>{record.pacienteNombre} — {record.pacienteEspecie}</span>
                   </div>
                 </div>
                 <span className={styles.recordCount}>
-                  {record.citas?.length || 0} cita{(record.citas?.length || 0) !== 1 ? 's' : ''}
+                  {record.citas.length} cita{record.citas.length !== 1 ? 's' : ''}
                 </span>
                 {selectedId === record.id && (
                   <FaCheck className={styles.checkIcon} />

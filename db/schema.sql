@@ -120,11 +120,15 @@ CREATE TABLE Medical_appointment (
 
 CREATE TABLE Medical_history (
 	id_medical_history INT AUTO_INCREMENT NOT NULL,
-	id_medical_appointment INT NOT NULL,
+	id_medical_appointment INT NULL,
 	id_user INT NOT NULL,
+	paciente_id INT NULL,
+	paciente_nombre VARCHAR(255) DEFAULT '',
+	paciente_especie VARCHAR(100) DEFAULT '',
 	name VARCHAR(255) NOT NULL DEFAULT '',
 	medical_notes TEXT,
 	made_at DATE NOT NULL,
+	created_by VARCHAR(100) DEFAULT '',
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY (id_medical_history),
 	FOREIGN KEY (id_medical_appointment) REFERENCES Medical_appointment(id_medical_appointment) ON DELETE CASCADE,
@@ -352,17 +356,18 @@ CREATE PROCEDURE sp_get_medical_records()
 BEGIN
 	SELECT
 		mh.id_medical_history AS id,
-		ma.id_patient AS pacienteId,
-		p.name AS pacienteNombre,
-		p.specie AS pacienteEspecie,
-		mh.name AS notas,
+		COALESCE(ma.id_patient, mh.paciente_id) AS pacienteId,
+		COALESCE(p.name, mh.paciente_nombre) AS pacienteNombre,
+		COALESCE(p.specie, mh.paciente_especie) AS pacienteEspecie,
+		mh.name AS nombre,
+		mh.medical_notes AS notas,
 		mh.made_at AS fechaCreacion,
 		mh.created_at AS ultimaActualizacion,
-		u.username AS createdBy
+		COALESCE(u.username, mh.created_by) AS createdBy
 	FROM Medical_history mh
-	INNER JOIN Medical_appointment ma ON mh.id_medical_appointment = ma.id_medical_appointment
-	INNER JOIN Patients p ON ma.id_patient = p.id_patient
-	INNER JOIN Users u ON mh.id_user = u.id_user
+	LEFT JOIN Medical_appointment ma ON mh.id_medical_appointment = ma.id_medical_appointment
+	LEFT JOIN Patients p ON ma.id_patient = p.id_patient
+	LEFT JOIN Users u ON mh.id_user = u.id_user
 	ORDER BY mh.made_at DESC;
 END //
 
@@ -370,20 +375,36 @@ CREATE PROCEDURE sp_get_medical_record_by_patient(IN p_id_patient INT)
 BEGIN
 	SELECT
 		mh.id_medical_history AS id,
-		ma.id_patient AS pacienteId,
-		p.name AS pacienteNombre,
-		p.specie AS pacienteEspecie,
-		mh.name AS notas,
+		COALESCE(ma.id_patient, mh.paciente_id) AS pacienteId,
+		COALESCE(p.name, mh.paciente_nombre) AS pacienteNombre,
+		COALESCE(p.specie, mh.paciente_especie) AS pacienteEspecie,
+		mh.name AS nombre,
+		mh.medical_notes AS notas,
 		mh.made_at AS fechaCreacion,
 		mh.created_at AS ultimaActualizacion,
-		u.username AS createdBy
+		COALESCE(u.username, mh.created_by) AS createdBy
 	FROM Medical_history mh
-	INNER JOIN Medical_appointment ma ON mh.id_medical_appointment = ma.id_medical_appointment
-	INNER JOIN Patients p ON ma.id_patient = p.id_patient
-	INNER JOIN Users u ON mh.id_user = u.id_user
-	WHERE ma.id_patient = p_id_patient
+	LEFT JOIN Medical_appointment ma ON mh.id_medical_appointment = ma.id_medical_appointment
+	LEFT JOIN Patients p ON ma.id_patient = p.id_patient
+	LEFT JOIN Users u ON mh.id_user = u.id_user
+	WHERE COALESCE(ma.id_patient, mh.paciente_id) = p_id_patient
 	ORDER BY mh.made_at DESC
 	LIMIT 1;
+END //
+
+CREATE PROCEDURE sp_create_medical_record(
+	IN p_name VARCHAR(255),
+	IN p_paciente_id INT,
+	IN p_paciente_nombre VARCHAR(255),
+	IN p_paciente_especie VARCHAR(100),
+	IN p_id_user INT,
+	IN p_created_by VARCHAR(100)
+)
+BEGIN
+	INSERT INTO Medical_history (name, paciente_id, paciente_nombre, paciente_especie, id_medical_appointment, id_user, medical_notes, made_at, created_by)
+	VALUES (p_name, p_paciente_id, p_paciente_nombre, p_paciente_especie, NULL, p_id_user, '', CURDATE(), p_created_by);
+
+	SELECT LAST_INSERT_ID() AS id;
 END //
 
 CREATE PROCEDURE sp_save_appointment_to_history(
@@ -500,6 +521,15 @@ BEGIN
 END //
 
 DELIMITER ;
+
+-- ─── MIGRATION: Allow standalone medical records ───────────────
+
+-- ALTER TABLE Medical_history MODIFY id_medical_appointment INT NULL;
+-- ALTER TABLE Medical_history ADD COLUMN paciente_id INT NULL AFTER id_user;
+-- ALTER TABLE Medical_history ADD COLUMN paciente_nombre VARCHAR(255) DEFAULT '' AFTER paciente_id;
+-- ALTER TABLE Medical_history ADD COLUMN paciente_especie VARCHAR(100) DEFAULT '' AFTER paciente_nombre;
+-- ALTER TABLE Medical_history ADD COLUMN created_by VARCHAR(100) DEFAULT '' AFTER made_at;
+-- UPDATE Medical_history SET created_by = (SELECT username FROM Users WHERE id_user = Medical_history.id_user) WHERE created_by = '';
 
 -- ─── SEED DATA ─────────────────────────────────────────────────
 

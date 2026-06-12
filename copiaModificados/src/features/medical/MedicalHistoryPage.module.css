@@ -225,10 +225,10 @@
 }
 
 .searchSection {
-  margin-bottom: 1rem;
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  margin-bottom: 1rem;
 }
 
 .searchSection > :first-child {
@@ -239,12 +239,12 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.85rem;
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition);
@@ -264,30 +264,29 @@
 }
 
 .filterToggleActive:hover {
-  background: var(--primary-hover);
   opacity: 0.9;
 }
 
-.advancedFilters {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
-  padding: 1rem;
+.filtersCard {
   margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.advancedFilters {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .filterRow {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.filterRow:last-of-type {
-  margin-bottom: 0;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .filterField {
   flex: 1;
+  min-width: 150px;
 }
 
 .filterField label {
@@ -308,10 +307,9 @@
   border-radius: var(--radius);
   font-size: 0.85rem;
   font-family: inherit;
-  background: white;
   outline: none;
-  transition: border-color var(--transition);
   box-sizing: border-box;
+  transition: border-color var(--transition);
 }
 
 .filterField input:focus,
@@ -320,7 +318,6 @@
 }
 
 .filterActions {
-  margin-top: 0.75rem;
   display: flex;
   justify-content: flex-end;
 }
@@ -328,7 +325,7 @@
 .clearFilters {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   padding: 0.35rem 0.75rem;
   background: transparent;
   color: var(--danger);

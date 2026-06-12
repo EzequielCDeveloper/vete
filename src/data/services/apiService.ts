@@ -212,6 +212,7 @@ export const appointmentApi = {
     notas?: string;
     guardarHistorial?: boolean;
     historialNotas?: string;
+    medicalRecordId?: string;
   }): Promise<Appointment> {
     return request<Appointment>('/appointments', {
       method: 'POST',
@@ -259,6 +260,17 @@ export const medicalRecordApi = {
   },
   getCitasByPatient(patientId: string): Promise<SavedCitaInfo[]> {
     return request<SavedCitaInfo[]>(`/medical-records/${patientId}/citas`);
+  },
+  createStandalone(data: {
+    nombre: string;
+    pacienteId: string;
+    pacienteNombre: string;
+    pacienteEspecie: string;
+  }): Promise<MedicalRecord> {
+    return request<MedicalRecord>('/medical-records/standalone', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 };
 

@@ -1,8 +1,9 @@
 import { useState, useEffect, type FormEvent } from 'react';
-import { FaSave, FaTimes, FaInfoCircle, FaPaw, FaHistory, FaCheck } from 'react-icons/fa';
+import { FaSave, FaTimes, FaInfoCircle, FaPaw, FaHistory, FaCheck, FaFolderOpen, FaExchangeAlt } from 'react-icons/fa';
 import { appointmentApi, patientApi, procedureApi, medicalRecordApi } from '../../data/services/apiService';
-import type { Procedure } from '../../data/services/apiService';
+import type { Procedure, MedicalRecord } from '../../data/services/apiService';
 import { Modal, FormError } from '../../shared/ui';
+import MedicalHistorySelectorModal from '../medical/MedicalHistorySelectorModal';
 import styles from './AppointmentDetailModal.module.css';
 
 interface AppointmentDetailModalProps {
@@ -22,11 +23,6 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Medical history state
-  const [historialNotas, setHistorialNotas] = useState('');
-  const [historySaving, setHistorySaving] = useState(false);
-  const [historySuccess, setHistorySuccess] = useState(false);
-
   // Patient info read-only
   const [patientNombre, setPatientNombre] = useState('—');
   const [patientEspecie, setPatientEspecie] = useState('—');
@@ -34,6 +30,13 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
   const [patientRaza, setPatientRaza] = useState('—');
   const [patientPropietario, setPatientPropietario] = useState('—');
   const [patientTelefono, setPatientTelefono] = useState('—');
+
+  // Medical history state
+  const [showSelector, setShowSelector] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
+  const [historialNotas, setHistorialNotas] = useState('');
+  const [historySaving, setHistorySaving] = useState(false);
+  const [historySuccess, setHistorySuccess] = useState(false);
 
   useEffect(() => {
     procedureApi.getAll()
@@ -65,6 +68,14 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
       }).catch(() => setError('Error al cargar los datos'))
         .finally(() => setLoading(false));
     }
+
+    // Reset history state when modal closes
+    if (!appointmentId) {
+      setSelectedRecord(null);
+      setShowSelector(false);
+      setHistorialNotas('');
+      setHistorySuccess(false);
+    }
   }, [appointmentId]);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -90,6 +101,17 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
     }
   };
 
+  const handleHistoryClick = () => {
+    setShowSelector(true);
+  };
+
+  const handleRecordSelected = (record: MedicalRecord) => {
+    setSelectedRecord(record);
+    setShowSelector(false);
+    setHistorialNotas('');
+    setHistorySuccess(false);
+  };
+
   const handleSaveToHistory = async () => {
     if (!appointmentId) return;
     setHistorySaving(true);
@@ -101,6 +123,10 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
     } finally {
       setHistorySaving(false);
     }
+  };
+
+  const handleChangeRecord = () => {
+    setShowSelector(true);
   };
 
   return (
@@ -219,26 +245,46 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
                 </div>
               ) : (
                 <>
-                  <div className={styles.formGroup}>
-                    <label className={styles.label}>
-                      Notas para el historial clínico
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={historialNotas}
-                      onChange={(e) => setHistorialNotas(e.target.value)}
-                      placeholder="Diagnóstico, tratamiento, observaciones..."
-                      disabled={historySaving}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.historyBtn}
-                    onClick={handleSaveToHistory}
-                    disabled={historySaving}
-                  >
-                    <FaHistory /> {historySaving ? 'Guardando...' : 'Guardar en Historial Médico'}
-                  </button>
+                  {selectedRecord && (
+                    <div className={styles.selectedRecordBadge}>
+                      <FaFolderOpen /> Historial: <strong>{selectedRecord.nombre || selectedRecord.pacienteNombre}</strong>
+                      <button type="button" className={styles.changeRecordBtn} onClick={handleChangeRecord}>
+                        <FaExchangeAlt /> Cambiar
+                      </button>
+                    </div>
+                  )}
+                  {!selectedRecord ? (
+                    <button
+                      type="button"
+                      className={styles.historyBtn}
+                      onClick={handleHistoryClick}
+                    >
+                      <FaHistory /> Guardar en Historial Médico
+                    </button>
+                  ) : (
+                    <>
+                      <div className={styles.formGroup}>
+                        <label className={styles.label}>
+                          Notas para el historial clínico
+                        </label>
+                        <textarea
+                          rows={3}
+                          value={historialNotas}
+                          onChange={(e) => setHistorialNotas(e.target.value)}
+                          placeholder="Diagnóstico, tratamiento, observaciones..."
+                          disabled={historySaving}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        className={styles.historyBtn}
+                        onClick={handleSaveToHistory}
+                        disabled={historySaving}
+                      >
+                        <FaHistory /> {historySaving ? 'Guardando...' : 'Guardar en Historial Médico'}
+                      </button>
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -254,6 +300,16 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
           </div>
         </form>
       )}
+
+      {/* Medical History Selector Modal */}
+      <MedicalHistorySelectorModal
+        isOpen={showSelector}
+        onClose={() => setShowSelector(false)}
+        onConfirm={handleRecordSelected}
+        pacienteNombre={patientNombre}
+        pacienteId={appointmentId ? undefined : undefined}
+        pacienteEspecie={patientEspecie}
+      />
     </Modal>
   );
 }
