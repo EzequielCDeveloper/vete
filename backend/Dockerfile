@@ -21,6 +21,9 @@ COPY --from=build /app/node_modules ./node_modules
 COPY package*.json ./
 COPY src/ ./src/
 
+# Crear directorio de logs y dar permiso al usuario app
+RUN mkdir -p /app/logs && chown app:app /app/logs
+
 USER app
 EXPOSE 4000
 
