@@ -1,0 +1,56 @@
+/* Base badge pill */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+}
+
+/* Status badge variants */
+.badge--success {
+  background: var(--success-bg);
+  color: var(--success);
+  font-weight: 600;
+}
+
+.badge--info {
+  background: var(--info-bg);
+  color: var(--info);
+  font-weight: 600;
+}
+
+.badge--warning {
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-weight: 600;
+}
+
+.badge--danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* Role badge variants */
+.badge--admin {
+  background: #ede9fe;
+  color: #6d28d9;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+}
+
+.badge--secretario {
+  background: var(--primary-subtle);
+  color: var(--primary);
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+}
+
+.badge--veterinario {
+  background: var(--warning-bg);
+  color: #b45309;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+}

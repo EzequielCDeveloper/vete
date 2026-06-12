@@ -1,0 +1,99 @@
+.calendar {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.header {
+  margin-bottom: 1rem;
+}
+
+.monthLabel {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: capitalize;
+}
+
+.weekGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+.dayCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 0.5rem;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+
+.dayCard:hover {
+  border-color: var(--primary);
+  background: var(--primary-subtle);
+}
+
+.today {
+  border-color: var(--primary);
+  background: var(--primary-subtle);
+}
+
+.dayName {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.today .dayName {
+  color: var(--primary);
+}
+
+.dayNum {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.today .count {
+  color: var(--primary);
+}
+
+@media (max-width: 768px) {
+  .weekGrid {
+    gap: 0.25rem;
+  }
+  .dayCard {
+    padding: 0.5rem 0.25rem;
+  }
+  .dayNum {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .dayName {
+    font-size: 0.65rem;
+  }
+  .dayNum {
+    font-size: 0.875rem;
+  }
+  .count {
+    font-size: 0.65rem;
+  }
+}

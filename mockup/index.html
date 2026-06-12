@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VetCare — Sistema de Gestión Veterinaria</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- LOGIN VIEW                                                    -->
+<!-- ============================================================ -->
+<div id="loginView">
+  <div class="login-backdrop"></div>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="brand-icon">
+          <i class="fas fa-paw"></i>
+        </div>
+        <h1>VetCare</h1>
+        <p class="brand-sub">Sistema de Gestión Veterinaria</p>
+      </div>
+
+      <form id="loginForm" class="login-form" autocomplete="off">
+        <div class="form-group">
+          <label for="username">
+            <i class="fas fa-user"></i> Nombre de Usuario
+          </label>
+          <input type="text" id="username" placeholder="Ingrese su usuario" required autofocus>
+        </div>
+
+        <div class="form-group">
+          <label for="password">
+            <i class="fas fa-lock"></i> Contraseña
+          </label>
+          <input type="password" id="password" placeholder="Ingrese su contraseña" required>
+        </div>
+
+        <div id="loginError" class="form-error hidden">
+          <i class="fas fa-exclamation-circle"></i>
+          <span></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+          <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
+        </button>
+
+        <div class="login-hint">
+          <p><strong>Demo:</strong> admin / admin123 • secre1 / secre123</p>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MAIN APP VIEW                                                 -->
+<!-- ============================================================ -->
+<div id="appView" class="hidden">
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <i class="fas fa-paw"></i>
+        <span class="sidebar-brand-text">VetCare</span>
+      </div>
+      <button id="sidebarToggle" class="sidebar-toggle" aria-label="Toggle sidebar">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ul>
+        <li class="nav-item active" data-view="dashboard">
+          <a href="#"><i class="fas fa-chart-pie"></i> <span>Dashboard</span></a>
+        </li>
+        <li class="nav-item" data-view="nueva-cita">
+          <a href="#"><i class="fas fa-calendar-plus"></i> <span>Nueva Cita</span></a>
+        </li>
+        <li class="nav-item" data-view="gestion-citas">
+          <a href="#"><i class="fas fa-calendar-check"></i> <span>Gestión de Citas</span></a>
+        </li>
+        <li class="nav-item" data-view="procedimientos">
+          <a href="#"><i class="fas fa-syringe"></i> <span>Tipos de Procedimientos</span></a>
+        </li>
+        <li class="nav-item admin-only" data-view="usuarios">
+          <a href="#"><i class="fas fa-users-cog"></i> <span>Gestión de Usuarios</span></a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">
+          <i class="fas fa-user-circle"></i>
+        </div>
+        <div class="user-info">
+          <span class="user-name" id="userNameDisplay">—</span>
+          <span class="user-role" id="userRoleDisplay">—</span>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-logout" id="logoutBtn">
+        <i class="fas fa-sign-out-alt"></i> <span>Cerrar Sesión</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <div id="contentArea">
+    <!-- Top Bar -->
+    <header id="topBar">
+      <div class="topbar-left">
+        <button id="mobileSidebarToggle" class="btn btn-ghost" aria-label="Menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h2 id="viewTitle">Dashboard</h2>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-user">
+          <i class="fas fa-user-circle"></i>
+          <span id="topbarUserName">—</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- Views Container -->
+    <div id="viewsContainer">
+      <!-- ======================== DASHBOARD ======================== -->
+      <section id="view-dashboard" class="content-view active">
+        <div class="view-header">
+          <h3><i class="fas fa-chart-pie"></i> Resumen del Día</h3>
+          <p class="view-desc">Vista general de citas y actividad del día.</p>
+        </div>
+        <div class="stats-grid" id="statsGrid">
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--primary">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="statTotal">0</span>
+              <span class="stat-label">Citas Hoy</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--success">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="statActivas">0</span>
+              <span class="stat-label">Activas</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--warning">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="statPendientes">0</span>
+              <span class="stat-label">Pendientes</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--info">
+              <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+              <span class="stat-value" id="statPacientes">0</span>
+              <span class="stat-label">Pacientes</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h4><i class="fas fa-list"></i> Citas del Día</h4>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table" id="dashboardCitasTable">
+                <thead>
+                  <tr>
+                    <th>Hora</th>
+                    <th>Paciente</th>
+                    <th>Especie</th>
+                    <th>Propietario</th>
+                    <th>Procedimiento</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardCitasBody">
+                  <tr><td colspan="6" class="text-center text-muted">No hay citas para hoy.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================== NUEVA CITA ======================== -->
+      <section id="view-nueva-cita" class="content-view">
+        <div class="view-header">
+          <h3><i class="fas fa-calendar-plus"></i> Nueva Cita</h3>
+          <p class="view-desc">Registre una nueva cita para un paciente existente.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <form id="nuevaCitaForm" autocomplete="off">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="nuevaPaciente">Paciente <span class="required">*</span></label>
+                  <select id="nuevaPaciente" required>
+                    <option value="">Seleccione un paciente...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="nuevaProcedimiento">Procedimiento <span class="required">*</span></label>
+                  <select id="nuevaProcedimiento" required>
+                    <option value="">Seleccione un procedimiento...</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="nuevaFecha">Fecha <span class="required">*</span></label>
+                  <input type="date" id="nuevaFecha" required>
+                </div>
+                <div class="form-group">
+                  <label for="nuevaHora">Hora <span class="required">*</span></label>
+                  <input type="time" id="nuevaHora" required>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="nuevaNotas">Notas adicionales</label>
+                <textarea id="nuevaNotas" rows="3" placeholder="Indicaciones, síntomas, observaciones..."></textarea>
+              </div>
+              <div id="nuevaCitaError" class="form-error hidden">
+                <i class="fas fa-exclamation-circle"></i> <span></span>
+              </div>
+              <div id="nuevaCitaSuccess" class="form-success hidden">
+                <i class="fas fa-check-circle"></i> <span></span>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-save"></i> Registrar Cita
+                </button>
+                <button type="reset" class="btn btn-secondary">
+                  <i class="fas fa-eraser"></i> Limpiar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================== GESTIÓN DE CITAS ======================== -->
+      <section id="view-gestion-citas" class="content-view">
+        <div class="view-header">
+          <h3><i class="fas fa-calendar-check"></i> Gestión de Citas</h3>
+          <p class="view-desc">Administre todas las citas registradas.</p>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="table-toolbar">
+              <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchCitas" placeholder="Buscar citas...">
+              </div>
+              <div class="filter-group">
+                <select id="filterEstado">
+                  <option value="">Todos los estados</option>
+                  <option value="Activo">Activo</option>
+                  <option value="Completada">Completada</option>
+                  <option value="Cancelada">Cancelada</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <table class="table" id="citasTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Paciente</th>
+                    <th>Propietario</th>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Procedimiento</th>
+                    <th>Estado</th>
+                    <th>Creada por</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="citasTableBody">
+                  <tr><td colspan="9" class="text-center text-muted">No hay citas registradas.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================== PROCEDIMIENTOS ======================== -->
+      <section id="view-procedimientos" class="content-view">
+        <div class="view-header">
+          <h3><i class="fas fa-syringe"></i> Tipos de Procedimientos</h3>
+          <p class="view-desc">Gestione los procedimientos veterinarios ofrecidos por la clínica.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h4><i class="fas fa-list"></i> Lista de Procedimientos</h4>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table" id="procedimientosTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Precio</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="procedimientosTableBody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit Procedure Modal -->
+        <div id="modalProcedimiento" class="modal-overlay hidden">
+          <div class="modal">
+            <div class="modal-header">
+              <h3><i class="fas fa-edit"></i> Editar Procedimiento</h3>
+              <button class="modal-close" onclick="cerrarModal('modalProcedimiento')">&times;</button>
+            </div>
+            <form id="editProcForm" class="modal-body">
+              <input type="hidden" id="editProcId">
+              <div class="form-group">
+                <label for="editProcNombre">Nombre del procedimiento</label>
+                <input type="text" id="editProcNombre" required>
+              </div>
+              <div class="form-group">
+                <label for="editProcDesc">Descripción</label>
+                <textarea id="editProcDesc" rows="3" required></textarea>
+              </div>
+              <div class="form-group">
+                <label for="editProcPrecio">Precio ($)</label>
+                <input type="number" id="editProcPrecio" step="0.01" min="0" required>
+              </div>
+              <div id="editProcError" class="form-error hidden">
+                <i class="fas fa-exclamation-circle"></i> <span></span>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="cerrarModal('modalProcedimiento')">
+                  <i class="fas fa-times"></i> Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================== USUARIOS (Admin) ======================== -->
+      <section id="view-usuarios" class="content-view">
+        <div class="view-header">
+          <h3><i class="fas fa-users-cog"></i> Gestión de Usuarios</h3>
+          <p class="view-desc">Administre las cuentas de usuario del sistema.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h4><i class="fas fa-user-plus"></i> Crear Nuevo Usuario</h4>
+          </div>
+          <div class="card-body">
+            <form id="createUserForm" autocomplete="off">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="newUserNombre">Nombre completo <span class="required">*</span></label>
+                  <input type="text" id="newUserNombre" placeholder="Ej: Juan Pérez" required>
+                </div>
+                <div class="form-group">
+                  <label for="newUserUsername">Nombre de usuario <span class="required">*</span></label>
+                  <input type="text" id="newUserUsername" placeholder="Ej: juanperez" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="newUserPassword">Contraseña <span class="required">*</span></label>
+                  <input type="password" id="newUserPassword" placeholder="Mín. 6 caracteres" minlength="6" required>
+                </div>
+                <div class="form-group">
+                  <label for="newUserRol">Rol <span class="required">*</span></label>
+                  <select id="newUserRol" required>
+                    <option value="">Seleccione un rol...</option>
+                    <option value="secretario">Secretario/a</option>
+                    <option value="veterinario">Veterinario/a</option>
+                    <option value="administrador">Administrador</option>
+                  </select>
+                </div>
+              </div>
+              <div id="createUserError" class="form-error hidden">
+                <i class="fas fa-exclamation-circle"></i> <span></span>
+              </div>
+              <div id="createUserSuccess" class="form-success hidden">
+                <i class="fas fa-check-circle"></i> <span></span>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-user-plus"></i> Crear Usuario
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h4><i class="fas fa-users"></i> Usuarios Registrados</h4>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table" id="usuariosTable">
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Nombre</th>
+                    <th>Rol</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="usuariosTableBody">
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Delete User Confirmation Modal -->
+        <div id="modalConfirmDelete" class="modal-overlay hidden">
+          <div class="modal modal-sm">
+            <div class="modal-header">
+              <h3><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h3>
+              <button class="modal-close" onclick="cerrarModal('modalConfirmDelete')">&times;</button>
+            </div>
+            <div class="modal-body">
+              <p>¿Está seguro de eliminar al usuario <strong id="deleteUserName">—</strong>?</p>
+              <p class="text-muted">Esta acción no se puede deshacer.</p>
+              <input type="hidden" id="deleteUserId">
+              <div id="deleteUserError" class="form-error hidden">
+                <i class="fas fa-exclamation-circle"></i> <span></span>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-danger" onclick="confirmarEliminarUsuario()">
+                  <i class="fas fa-trash"></i> Eliminar
+                </button>
+                <button class="btn btn-secondary" onclick="cerrarModal('modalConfirmDelete')">
+                  <i class="fas fa-times"></i> Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div><!-- /viewsContainer -->
+  </div><!-- /contentArea -->
+</div><!-- /appView -->
+
+
+<!-- ============================================================ -->
+<!-- APPOINTMENT DETAIL MODAL                                     -->
+<!-- ============================================================ -->
+<div id="modalCitaDetalle" class="modal-overlay hidden">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <h3><i class="fas fa-calendar-alt"></i> Detalle de Cita</h3>
+      <button class="modal-close" onclick="cerrarModal('modalCitaDetalle')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form id="editCitaForm" autocomplete="off">
+        <input type="hidden" id="editCitaId">
+
+        <div class="detail-section">
+          <h4 class="section-title"><i class="fas fa-info-circle"></i> Información de la Cita</h4>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editCitaFecha">Fecha</label>
+              <input type="date" id="editCitaFecha" required>
+            </div>
+            <div class="form-group">
+              <label for="editCitaHora">Hora</label>
+              <input type="time" id="editCitaHora" required>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editCitaProcedimiento">Procedimiento</label>
+              <select id="editCitaProcedimiento" required></select>
+            </div>
+            <div class="form-group">
+              <label for="editCitaEstado">Estado</label>
+              <select id="editCitaEstado">
+                <option value="Activo">Activo</option>
+                <option value="Completada">Completada</option>
+                <option value="Cancelada">Cancelada</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="editCitaNotas">Notas</label>
+            <textarea id="editCitaNotas" rows="2" placeholder="Notas de la cita..."></textarea>
+          </div>
+        </div>
+
+        <div class="detail-section detail-section--patient">
+          <h4 class="section-title"><i class="fas fa-paw"></i> Información del Paciente</h4>
+          <div class="patient-info-grid">
+            <div class="patient-info-item">
+              <span class="patient-info-label">Nombre</span>
+              <span class="patient-info-value" id="editPacienteNombre">—</span>
+            </div>
+            <div class="patient-info-item">
+              <span class="patient-info-label">Especie</span>
+              <span class="patient-info-value" id="editPacienteEspecie">—</span>
+            </div>
+            <div class="patient-info-item">
+              <span class="patient-info-label">Edad</span>
+              <span class="patient-info-value" id="editPacienteEdad">—</span>
+            </div>
+            <div class="patient-info-item">
+              <span class="patient-info-label">Raza</span>
+              <span class="patient-info-value" id="editPacienteRaza">—</span>
+            </div>
+            <div class="patient-info-item">
+              <span class="patient-info-label">Propietario</span>
+              <span class="patient-info-value" id="editPacientePropietario">—</span>
+            </div>
+            <div class="patient-info-item">
+              <span class="patient-info-label">Teléfono</span>
+              <span class="patient-info-value" id="editPacienteTelefono">—</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="editCitaError" class="form-error hidden">
+          <i class="fas fa-exclamation-circle"></i> <span></span>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="saveCitaBtn">
+            <i class="fas fa-save"></i> Guardar Cambios
+          </button>
+          <button type="button" class="btn btn-secondary" onclick="cerrarModal('modalCitaDetalle')">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+.viewHeader {
+  margin-bottom: 1.5rem;
+}
+
+.viewHeader h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.headerIcon {
+  color: var(--primary);
+}
+
+.viewDesc {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary);
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.emptyState h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.emptyState p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.emptyHint {
+  font-size: 0.8rem !important;
+  color: var(--text-muted) !important;
+  margin-top: 0.75rem !important;
+  font-style: italic;
+}
+
+.recordsGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.recordCard {
+  transition: box-shadow var(--transition);
+}
+
+.recordCard:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.recordHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.25rem 0;
+}
+
+.recordInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 200px;
+}
+
+.patientName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.patientIcon {
+  color: var(--primary);
+}
+
+.recordMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.metaDivider {
+  color: var(--border);
+}
+
+.expandBtn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.25rem;
+  border-radius: var(--radius);
+  transition: all var(--transition);
+}
+
+.expandBtn:hover {
+  color: var(--primary);
+  background: var(--primary-subtle);
+}
+
+.recordNotes {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: var(--warning-bg);
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.notesIcon {
+  color: var(--warning);
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+}
+
+.citasList {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
+}
+
+.citasTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.citasTitle svg {
+  color: var(--primary);
+}
+
+.tableResponsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table thead {
+  background: #f8fafc;
+}
+
+.table th {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text);
+  vertical-align: top;
+}
+
+.table tbody tr {
+  transition: background var(--transition);
+}
+
+.table tbody tr:hover {
+  background: #fafbfc;
+}
+
+.actionBtn {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.actionBtn:hover {
+  background: var(--primary);
+  color: white;
+}
+
+.searchSection {
+  margin-bottom: 1rem;
+}
+
+.noResults {
+  text-align: center;
+  color: var(--text-secondary);
+  padding: 2rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+  .recordHeader {
+    flex-wrap: wrap;
+  }
+
+  .recordMeta {
+    order: 10;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}

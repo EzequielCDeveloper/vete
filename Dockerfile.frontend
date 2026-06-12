@@ -1,0 +1,18 @@
+# ─── VetCare Frontend — Dockerfile ────────────────────────────
+# Multi-stage: compila con Node, sirve con nginx-alpine.
+# El proxy nginx nativo apunta a este contenedor en :3000.
+# ──────────────────────────────────────────────────────────────
+
+FROM node:22-alpine AS build
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+# ─── Stage final: nginx sirviendo la SPA ─────────────────────
+FROM nginx:alpine
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80

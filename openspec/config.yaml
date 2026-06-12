@@ -1,0 +1,60 @@
+# OpenSpec — VetCare Project (SDD Init)
+schema: spec-driven
+project: ProyectVet
+version: 1.0.0
+language: es
+
+context: |
+  VetCare — Sistema de gestión veterinaria.
+  Frontend: React 19 + Vite 8 + TypeScript 6 (monorepo root).
+  Backend:  Node.js + Express 5 + MariaDB (socket) + JWT.
+  Auth:     JWT con roles (admin/user).
+  Frontend estructura: features/ por dominio (auth, appointments, procedures, users, medical, dashboard)
+    + shared/ (ui, utils, types) + layouts/ + context/.
+  Backend estructura: controllers/, routes/, middlewares/, helpers/, config/ (env, db).
+  API proxy: Vite → /api → localhost:4000.
+
+testing:
+  strict_tdd: false
+  reason: >
+    No se detectó ningún test runner configurado
+    (no vitest, jest, mocha, ava, etc. en frontend ni backend).
+    TDD estricto no disponible hasta que se instale un runner.
+  runner: null
+  layers:
+    unit: false
+    integration: false
+    e2e: false
+  coverage: false
+  quality:
+    linter: eslint v10 (eslint.config.js con @eslint/js, typescript-eslint, react-hooks)
+    type_checker: typescript ~6.0.2 (tsconfig.app.json con opciones estrictas)
+    formatter: null
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Todo cambio debe mencionar impacto en frontend y/o backend
+  specs:
+    - Usar Given/When/Then para escenarios (lenguaje del proyecto: español)
+    - Usar RFC 2119 keywords (DEBE, DEBERÍA, PUEDE)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+    - Separar tareas de frontend y backend cuando aplique
+  apply:
+    - Follow existing code patterns (CommonJS backend, ESM frontend)
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: "npm run build"
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+
+specs:
+  - specs/owasp-mitigation

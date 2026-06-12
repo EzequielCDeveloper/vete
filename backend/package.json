@@ -1,0 +1,27 @@
+{
+  "name": "vetcare-api",
+  "version": "1.0.0",
+  "description": "VetCare — API REST (Express + JWT + MariaDB)",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "audit": "npm audit --production"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.22.5",
+    "pino": "^9.6.0",
+    "pino-roll": "^2.0.0",
+    "zod": "^3.24.0"
+  }
+}

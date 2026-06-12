@@ -1,0 +1,56 @@
+# ─── VetCare — Docker Compose (producción) ───────────────────
+# Backend + Frontend en Docker.
+# MariaDB: corre en docker-compose.mariadb.yml aparte.
+# Nginx nativo: proxy reversa hacia ambos.
+# ──────────────────────────────────────────────────────────────
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vetcare-backend
+    restart: unless-stopped
+    environment:
+      PORT: "4000"
+      NODE_ENV: production
+      DB_HOST: mariadb
+      DB_PORT: "3306"
+      DB_USER: mi_usuario_app
+      DB_PASS_FILE: /run/secrets/db_password
+      DB_NAME: Veterinaria_pet_land
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ORIGIN: https://veterinaria.ezequielcastellanosleyva.net
+    secrets:
+      - db_password
+    ports:
+      - "127.0.0.1:4000:4000"
+    networks:
+      - vetcare-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: vetcare-frontend
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3005:80"
+    networks:
+      - vetcare-net
+    depends_on:
+      - backend
+
+networks:
+  vetcare-net:
+    external: true
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt

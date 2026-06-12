@@ -1,0 +1,57 @@
+// ─── Medical Record Controller ────────────────────────────────
+const pool = require('../config/db');
+const { json, error, serverError } = require('../helpers/response');
+
+exports.getAll = async (_req, res) => {
+  try {
+    const [rows] = await pool.query('CALL sp_get_medical_records()');
+    json(res, rows[0].map(r => ({ ...r, id: String(r.id), pacienteId: String(r.pacienteId) })));
+  } catch (err) { serverError(res, err); }
+};
+
+exports.getByPatient = async (req, res) => {
+  try {
+    const [rows] = await pool.execute('CALL sp_get_medical_record_by_patient(?)', [Number(req.params.patientId)]);
+    const records = rows[0];
+    if (!records || records.length === 0) return error(res, 'No hay historial para este paciente', 404);
+    json(res, { ...records[0], id: String(records[0].id), pacienteId: String(records[0].pacienteId) });
+  } catch (err) { serverError(res, err); }
+};
+
+exports.create = async (req, res) => {
+  try {
+    const { citaId, notas } = req.body;
+    if (!citaId) return error(res, 'ID de cita requerido');
+
+    const [rows] = await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [
+      Number(citaId), req.user.id, notas || null,
+    ]);
+    const result = rows[0]?.[0];
+
+    // Build response with appointment + patient info
+    const [aRows] = await pool.execute('CALL sp_get_appointment_by_id(?)', [Number(citaId)]);
+    const apt = aRows[0]?.[0];
+
+    const [pRows] = await pool.execute('CALL sp_get_patient_by_id(?)', [Number(apt?.pacienteId)]);
+    const patient = pRows[0]?.[0];
+
+    json(res, {
+      id: String(result?.id || '0'),
+      pacienteId: apt ? String(apt.pacienteId) : '',
+      pacienteNombre: patient?.nombre || '',
+      pacienteEspecie: patient?.especie || '',
+      citas: [],
+      fechaCreacion: new Date().toISOString().split('T')[0],
+      ultimaActualizacion: new Date().toISOString().split('T')[0],
+      notas: notas || '',
+      createdBy: req.user.username,
+    }, 201);
+  } catch (err) { serverError(res, err); }
+};
+
+exports.getCitasByPatient = async (req, res) => {
+  try {
+    const [rows] = await pool.execute('CALL sp_get_history_citas(?)', [Number(req.params.patientId)]);
+    json(res, rows[0]);
+  } catch (err) { serverError(res, err); }
+};
