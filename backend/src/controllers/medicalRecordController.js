@@ -5,7 +5,43 @@ const { json, error, serverError } = require('../helpers/response');
 exports.getAll = async (_req, res) => {
   try {
     const [rows] = await pool.query('CALL sp_get_medical_records()');
-    json(res, rows[0].map(r => ({ ...r, id: String(r.id), pacienteId: String(r.pacienteId) })));
+    const records = rows[0];
+
+    // Collect non-null appointment IDs to fetch citas
+    const aptIds = records
+      .map(r => r.id_medical_appointment)
+      .filter(id => id != null);
+
+    // Build a map of citaId → cita details
+    const citasMap = new Map();
+    if (aptIds.length > 0) {
+      const [citasRows] = await pool.query(
+        `SELECT
+          ma.id_medical_appointment AS citaId,
+          ma.made_at AS fecha,
+          ma.hour AS hora,
+          vp.name AS procedimientoNombre,
+          mh.medical_notes AS notas,
+          COALESCE(mh.name, 'Historial') AS historialMedico
+        FROM Medical_appointment ma
+        INNER JOIN Veterian_procedures vp ON ma.id_veterian_procedure = vp.id_veterian_procedure
+        INNER JOIN Medical_history mh ON mh.id_medical_appointment = ma.id_medical_appointment
+        WHERE ma.id_medical_appointment IN (?)`,
+        [aptIds]
+      );
+      for (const c of citasRows) {
+        const id = String(c.citaId);
+        if (!citasMap.has(id)) citasMap.set(id, []);
+        citasMap.get(id).push({ ...c, citaId: id });
+      }
+    }
+
+    json(res, records.map(r => ({
+      ...r,
+      id: String(r.id),
+      pacienteId: String(r.pacienteId),
+      citas: citasMap.get(r.id_medical_appointment) || [],
+    })));
   } catch (err) { serverError(res, err); }
 };
 
