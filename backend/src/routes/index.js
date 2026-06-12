@@ -21,7 +21,7 @@ router.use('/dashboard', dashboardRoutes);
 
 // Health check
 router.get('/health', (_req, res) => {
-  res.json({ status: 'ok', db: 'Veterinaria_pet_land' });
+  res.json({ status: 'ok' });
 });
 
 module.exports = router;

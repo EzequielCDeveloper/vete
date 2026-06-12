@@ -45,6 +45,9 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
 
   const [createdPatientId, setCreatedPatientId] = useState<string | null>(null);
 
+  // Field-level validation errors
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   // Wizard state
   const [step, setStep] = useState(1);
 
@@ -61,22 +64,86 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
       .finally(() => setLoadingProcedures(false));
   }, []);
 
+  // ── Character sanitizers ──────────────────────────────────────
+
+  const sanitizeLetters = (value: string) =>
+    value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '');
+
+  const sanitizeDigits = (value: string) =>
+    value.replace(/[^\d]/g, '');
+
+  // ── Input key filters ─────────────────────────────────────────
+
+  const handleLetterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const key = e.key;
+    if (key.length === 1 && !/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]$/.test(key) && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+    }
+  };
+
+  const handleDigitKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const key = e.key;
+    if (key.length === 1 && !/^\d$/.test(key) && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+    }
+  };
+
+  // ── Change handlers with sanitisation ─────────────────────────
+
+  const handleLetterChange = (setter: (v: string) => void) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setter(sanitizeLetters(e.target.value));
+    };
+
+  const handleDigitChange = (setter: (v: string) => void) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setter(sanitizeDigits(e.target.value));
+    };
+
+  // ── Field validation ──────────────────────────────────────────
+
+  const validatePatientFields = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    const nombre = sanitizeLetters(pacienteNombre);
+    if (nombre.length < 2) {
+      errors.nombre = 'El nombre debe tener al menos 2 caracteres y solo letras.';
+    }
+
+    const raza = sanitizeLetters(pacienteRaza);
+    if (raza.length < 3) {
+      errors.raza = 'La raza debe tener al menos 3 caracteres y solo letras.';
+    }
+
+    const telefono = sanitizeDigits(pacienteTelefono);
+    if (telefono.length < 8) {
+      errors.telefono = 'Número telefónico incompleto. Debe tener al menos 8 dígitos.';
+    }
+
+    const propietario = sanitizeLetters(pacientePropietario);
+    if (propietario.length === 0) {
+      errors.propietario = 'El nombre del propietario es obligatorio y solo letras.';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleNext = async () => {
     setError(null);
-    if (!pacienteNombre || !pacienteEspecie || !pacienteEdad || !pacienteRaza || !pacientePropietario || !pacienteTelefono) {
-      setError('Todos los campos del paciente son obligatorios.');
-      return;
-    }
+    setFieldErrors({});
+
+    if (!validatePatientFields()) return;
 
     setSaving(true);
     try {
       const patient = await patientApi.create({
-        nombre: pacienteNombre,
+        nombre: sanitizeLetters(pacienteNombre),
         especie: pacienteEspecie,
         edad: pacienteEdad,
-        raza: pacienteRaza,
-        propietario: pacientePropietario,
-        telefono: pacienteTelefono,
+        raza: sanitizeLetters(pacienteRaza),
+        propietario: sanitizeLetters(pacientePropietario).toUpperCase(),
+        telefono: sanitizeDigits(pacienteTelefono),
       });
       setCreatedPatientId(patient.id);
       setStep(2);
@@ -248,9 +315,12 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                     <input
                       type="text"
                       value={pacienteNombre}
-                      onChange={(e) => setPacienteNombre(e.target.value)}
+                      onChange={handleLetterChange(setPacienteNombre)}
+                      onKeyDown={handleLetterKeyDown}
+                      className={fieldErrors.nombre ? styles.inputError : ''}
                       required
                     />
+                    {fieldErrors.nombre && <span className={styles.fieldError}>{fieldErrors.nombre}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label className={styles.label}>
@@ -294,9 +364,12 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                     <input
                       type="text"
                       value={pacienteRaza}
-                      onChange={(e) => setPacienteRaza(e.target.value)}
+                      onChange={handleLetterChange(setPacienteRaza)}
+                      onKeyDown={handleLetterKeyDown}
+                      className={fieldErrors.raza ? styles.inputError : ''}
                       required
                     />
+                    {fieldErrors.raza && <span className={styles.fieldError}>{fieldErrors.raza}</span>}
                   </div>
                 </div>
                 <div className={styles.formRow}>
@@ -307,9 +380,12 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                     <input
                       type="text"
                       value={pacientePropietario}
-                      onChange={(e) => setPacientePropietario(e.target.value)}
+                      onChange={handleLetterChange(setPacientePropietario)}
+                      onKeyDown={handleLetterKeyDown}
+                      className={fieldErrors.propietario ? styles.inputError : ''}
                       required
                     />
+                    {fieldErrors.propietario && <span className={styles.fieldError}>{fieldErrors.propietario}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label className={styles.label}>
@@ -318,9 +394,13 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                     <input
                       type="text"
                       value={pacienteTelefono}
-                      onChange={(e) => setPacienteTelefono(e.target.value)}
+                      onChange={handleDigitChange(setPacienteTelefono)}
+                      onKeyDown={handleDigitKeyDown}
+                      className={fieldErrors.telefono ? styles.inputError : ''}
+                      placeholder="Ej: 987654321"
                       required
                     />
+                    {fieldErrors.telefono && <span className={styles.fieldError}>{fieldErrors.telefono}</span>}
                   </div>
                 </div>
               </div>

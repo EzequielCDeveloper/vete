@@ -50,7 +50,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: 'Error de conexión' })) as ApiError;
-    throw new Error(body.error || `HTTP ${res.status}`);
+    throw new Error(body.error || `Error del servidor (${res.status})`);
   }
 
   // 204 No Content (DELETE success, etc.)

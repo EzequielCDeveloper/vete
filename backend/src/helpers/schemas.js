@@ -15,12 +15,27 @@ const { z } = require('zod');
 // ─── Patient ──────────────────────────────────────────────────
 
 const patientSchema = z.object({
-  nombre: z.string().min(2, 'El nombre del paciente debe tener al menos 2 caracteres'),
+  nombre: z
+    .string()
+    .min(2, 'El nombre debe tener al menos 2 caracteres y solo letras.')
+    .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/, 'El nombre solo puede contener letras.'),
   especie: z.string().optional().default(''),
-  edad: z.coerce.number().int().positive('La edad debe ser un número positivo').optional().nullable(),
-  raza: z.string().optional().default(''),
-  propietario: z.string().optional().default(''),
-  telefono: z.string().optional().default(''),
+  edad: z.string().optional().nullable().default(''),
+  raza: z
+    .string()
+    .min(3, 'La raza debe tener al menos 3 caracteres y solo letras.')
+    .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/, 'La raza solo puede contener letras.')
+    .optional()
+    .default(''),
+  propietario: z
+    .string()
+    .min(1, 'El propietario es obligatorio y solo letras.')
+    .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/, 'El propietario solo puede contener letras.')
+    .transform(v => v.toUpperCase()),
+  telefono: z
+    .string()
+    .min(8, 'Número telefónico incompleto. Debe tener al menos 8 dígitos.')
+    .regex(/^\d+$/, 'El teléfono solo puede contener números.'),
 });
 
 // ─── Appointment ──────────────────────────────────────────────

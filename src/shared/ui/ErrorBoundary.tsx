@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
           fontFamily: 'Inter, sans-serif', color: '#1F2937', background: '#F0F2F5'
         }}>
           <h1 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Algo salió mal</h1>
-          <p style={{ color: '#6B7280', marginBottom: '1rem' }}>{this.state.error?.message || 'Error inesperado'}</p>
+          <p style={{ color: '#6B7280', marginBottom: '1rem' }}>Ocurrió un error inesperado. Intente recargar la página.</p>
           <button onClick={() => window.location.reload()}
             style={{
               padding: '0.5rem 1rem', background: '#4A90D9', color: 'white',
