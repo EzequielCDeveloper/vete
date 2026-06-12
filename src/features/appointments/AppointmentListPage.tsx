@@ -82,7 +82,7 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
   // Filter logic — AND across all active filters
   const filtered = appointments.filter((apt) => {
     if (statusFilter && apt.estado !== statusFilter) return false;
-    if (filterFecha && apt.fecha !== filterFecha) return false;
+    if (filterFecha && !apt.fecha.startsWith(filterFecha)) return false;
     if (filterHora && !apt.hora.toLowerCase().includes(filterHora.toLowerCase())) return false;
 
     if (search) {

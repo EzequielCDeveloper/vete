@@ -97,6 +97,20 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
       return;
     }
 
+    // Validate date is not in the past
+    const today = getTodayISO();
+    if (fecha < today) {
+      setError('La fecha no puede ser anterior a hoy.');
+      return;
+    }
+    if (fecha === today) {
+      const now = getCurrentTime();
+      if (hora < now) {
+        setError('La hora no puede ser anterior a la hora actual.');
+        return;
+      }
+    }
+
     setSaving(true);
 
     try {
@@ -242,13 +256,22 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                     <label className={styles.label}>
                       Especie <span className="required">*</span>
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={pacienteEspecie}
                       onChange={(e) => setPacienteEspecie(e.target.value)}
-                      placeholder="ej: Canino, Felino"
                       required
-                    />
+                    >
+                      <option value="">Seleccione especie...</option>
+                      <option value="Canino">Canino</option>
+                      <option value="Felino">Felino</option>
+                      <option value="Ave">Ave</option>
+                      <option value="Roedor">Roedor</option>
+                      <option value="Reptil">Reptil</option>
+                      <option value="Equino">Equino</option>
+                      <option value="Bovino">Bovino</option>
+                      <option value="Porcino">Porcino</option>
+                      <option value="Otro">Otro</option>
+                    </select>
                   </div>
                 </div>
                 <div className={styles.formRow}>
@@ -257,10 +280,12 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                       Edad <span className="required">*</span>
                     </label>
                     <input
-                      type="text"
+                      type="number"
+                      min="0"
+                      max="100"
                       value={pacienteEdad}
                       onChange={(e) => setPacienteEdad(e.target.value)}
-                      placeholder="ej: 3 años"
+                      placeholder="ej: 3"
                       required
                     />
                   </div>

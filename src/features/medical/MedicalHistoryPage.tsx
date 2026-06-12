@@ -72,7 +72,7 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
     // Advanced filters
     if (filterAnimal && !r.pacienteNombre.toLowerCase().includes(filterAnimal.toLowerCase())) return false;
     if (filterEspecie && !r.pacienteEspecie.toLowerCase().includes(filterEspecie.toLowerCase())) return false;
-    if (filterFecha && r.fechaCreacion !== filterFecha) return false;
+    if (filterFecha && !r.fechaCreacion.startsWith(filterFecha)) return false;
 
     // Procedimiento filter — check citas array
     if (filterProcedimiento && r.citas) {
