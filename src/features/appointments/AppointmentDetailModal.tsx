@@ -285,6 +285,7 @@ export function AppointmentDetailModal({ appointmentId, onClose, onSaved }: Appo
                           rows={3}
                           value={historialNotas}
                           onChange={(e) => setHistorialNotas(e.target.value)}
+                          maxLength={200}
                           placeholder="Diagnóstico, tratamiento, observaciones..."
                           disabled={historySaving}
                         />

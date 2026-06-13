@@ -571,7 +571,7 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                       value={historialNotas}
                       onChange={(e) => setHistorialNotas(e.target.value)}
                       rows={3}
-                      maxLength={50}
+                      maxLength={200}
                       placeholder="Ingrese notas clínicas, diagnóstico, tratamiento..."
                     />
                   </div>

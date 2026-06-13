@@ -50,7 +50,7 @@ const createAppointmentSchema = z.object({
   hora: z.string().regex(/^\d{2}:\d{2}$/, 'Formato de hora inválido (HH:MM)'),
   notas: z.string().optional().nullable(),
   guardarHistorial: z.boolean().optional(),
-  historialNotas: z.string().optional().nullable(),
+  historialNotas: z.string().max(200, 'Las notas del historial no pueden exceder los 200 caracteres.').optional().nullable(),
   medicalRecordId: z.coerce.number().int().positive().optional(),
 });
 
@@ -91,7 +91,7 @@ const createUserSchema = z.object({
 
 const medicalRecordSchema = z.object({
   citaId: z.coerce.number().int().positive('ID de cita inválido'),
-  notas: z.string().optional().nullable(),
+  notas: z.string().max(200, 'Las notas del historial no pueden exceder los 200 caracteres.').optional().nullable(),
 });
 
 const standaloneMedicalRecordSchema = z.object({
