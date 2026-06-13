@@ -48,7 +48,18 @@ exports.delete = async (req, res) => {
     await audit.log(pool, req.user.id, 'delete', 'procedure', Number(req.params.id));
 
     json(res, { success: true });
-  } catch (err) { serverError(res, err); }
+  } catch (err) {
+    if (err.message && err.message.includes('tiene citas asociadas')) {
+      return error(res, err.message);
+    }
+    if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+      return error(res, 'No se puede eliminar el procedimiento porque tiene citas asociadas.');
+    }
+    if (err.code === 'ER_SP_DOES_NOT_EXIST') {
+      return error(res, 'Error de configuración: la función de eliminación no está disponible en la base de datos. Ejecute la migración db/migrate-delete-procedure.sql.');
+    }
+    serverError(res, err);
+  }
 };
 
 exports.update = async (req, res) => {
