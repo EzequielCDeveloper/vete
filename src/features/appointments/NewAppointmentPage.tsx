@@ -75,9 +75,6 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
   const sanitizeDigits = (value: string) =>
     value.replace(/[^\d]/g, '');
 
-  const sanitizeDigitsAndDecimal = (value: string) =>
-    value.replace(/[^\d.]/g, '');
-
   // ── Input key filters ─────────────────────────────────────────
 
   const handleLetterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
