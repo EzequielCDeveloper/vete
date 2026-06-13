@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaChartPie, FaCalendarCheck, FaCheckCircle, FaClock, FaUsers, FaList } from 'react-icons/fa';
 import { appointmentApi, patientApi, procedureApi } from '../../data/services/apiService';
 import type { Appointment, Patient, Procedure } from '../../data/services/apiService';
+import { sanitizeDate } from '../../shared/utils';
 import { Card, StatCard, Badge, Breadcrumbs } from '../../shared/ui';
 import { WeekCalendar } from './WeekCalendar';
 import styles from './DashboardPage.module.css';
@@ -46,7 +47,7 @@ export default function DashboardPage({ onNavigate, onSelectDay }: DashboardPage
     }).catch(() => {});
   }, []);
 
-  const todayAppointments = appointments.filter((a) => a.fecha === today && a.estado !== 'Cancelada');
+  const todayAppointments = appointments.filter((a) => sanitizeDate(a.fecha) === today && a.estado !== 'Cancelada');
   const totalHoy = todayAppointments.length;
   const activas = todayAppointments.filter((a) => a.estado === 'Activo').length;
   const pendientes = appointments.filter((a) => a.estado === 'Activo').length;

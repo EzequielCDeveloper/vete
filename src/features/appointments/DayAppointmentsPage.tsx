@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { FaCalendarDay, FaArrowLeft } from 'react-icons/fa';
 import { appointmentApi, patientApi, procedureApi, userApi } from '../../data/services/apiService';
 import type { Appointment, Patient, Procedure } from '../../data/services/apiService';
+import { sanitizeDate } from '../../shared/utils';
 import { Card, Badge, Breadcrumbs, Modal } from '../../shared/ui';
 import { AppointmentDetailModal } from './AppointmentDetailModal';
 import styles from './DayAppointmentsPage.module.css';
@@ -40,7 +41,7 @@ export default function DayAppointmentsPage({ date, onNavigate }: DayAppointment
         procedureApi.getAll(),
         userApi.getAll(),
       ]);
-      setAppointments(apts.filter((a) => a.fecha === date));
+      setAppointments(apts.filter((a) => sanitizeDate(a.fecha) === date));
       setPatientsMap(Object.fromEntries(pats.map(p => [p.id, p])));
       setProceduresMap(Object.fromEntries(procs.map(p => [p.id, p])));
       setUsersMap(Object.fromEntries(users.map(u => [u.username, u.nombre])));

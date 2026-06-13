@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FaSyringe, FaPlus, FaList, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
+import { FaSyringe, FaPlus, FaList, FaTrash, FaExclamationTriangle, FaEye, FaEyeSlash, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { procedureApi, userApi } from '../../data/services/apiService';
 import type { Procedure } from '../../data/services/apiService';
-import { Card, Breadcrumbs, Modal } from '../../shared/ui';
+import { Card, Breadcrumbs, Modal, Badge } from '../../shared/ui';
 import { formatCurrency } from '../../shared/utils';
 import { ProcedureEditModal } from './ProcedureEditModal';
 import styles from './ProcedureListPage.module.css';
@@ -19,6 +19,7 @@ export default function ProcedureListPage({ onNavigate }: ProcedureListPageProps
   const [deleteTarget, setDeleteTarget] = useState<Procedure | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   const getUserName = (username: string | undefined) => {
     if (!username) return '—';
@@ -41,6 +42,10 @@ export default function ProcedureListPage({ onNavigate }: ProcedureListPageProps
   useEffect(() => {
     loadProcedures();
   }, [loadProcedures]);
+
+  const visibleProcedures = showInactive
+    ? procedures
+    : procedures.filter((p) => p.active !== false);
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -80,6 +85,13 @@ export default function ProcedureListPage({ onNavigate }: ProcedureListPageProps
           <button className={styles.btnPrimary} onClick={() => setShowCreateModal(true)}>
             <FaPlus /> Nuevo Procedimiento
           </button>
+          <button
+            className={`${styles.filterToggle} ${showInactive ? styles.filterToggleActive : ''}`}
+            onClick={() => setShowInactive(!showInactive)}
+            title={showInactive ? 'Ocultar inactivos' : 'Mostrar inactivos'}
+          >
+            {showInactive ? <FaEyeSlash /> : <FaEye />} {showInactive ? 'Ocultar Inactivos' : 'Mostrar Inactivos'}
+          </button>
         </div>
         <div className={styles.tableResponsive}>
           <table className={styles.table}>
@@ -89,24 +101,30 @@ export default function ProcedureListPage({ onNavigate }: ProcedureListPageProps
                 <th>Nombre</th>
                 <th>Descripción</th>
                 <th>Precio</th>
+                <th>Estado</th>
                 <th>Creado por</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {procedures.length === 0 ? (
+              {visibleProcedures.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className={styles.emptyCell}>
+                  <td colSpan={7} className={styles.emptyCell}>
                     No hay procedimientos registrados.
                   </td>
                 </tr>
               ) : (
-                procedures.map((proc, idx) => (
+                visibleProcedures.map((proc, idx) => (
                   <tr key={proc.id}>
                     <td>{idx + 1}</td>
                     <td>{proc.nombre}</td>
                     <td>{proc.descripcion}</td>
                     <td>{formatCurrency(proc.precio)}</td>
+                    <td>
+                      <Badge variant={proc.active !== false ? 'success' : 'danger'}>
+                        {proc.active !== false ? <><FaCheckCircle /> Activo</> : <><FaTimesCircle /> Inactivo</>}
+                      </Badge>
+                    </td>
                     <td>{getUserName(proc.createdBy)}</td>
                     <td>
                       <button
@@ -116,13 +134,15 @@ export default function ProcedureListPage({ onNavigate }: ProcedureListPageProps
                       >
                         Modificar
                       </button>
-                      <button
-                        className={styles.deleteBtn}
-                        onClick={() => setDeleteTarget(proc)}
-                        title="Eliminar procedimiento"
-                      >
-                        <FaTrash /> Eliminar
-                      </button>
+                      {proc.active !== false && (
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => setDeleteTarget(proc)}
+                          title="Eliminar procedimiento"
+                        >
+                          <FaTrash /> Eliminar
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -163,7 +183,7 @@ export default function ProcedureListPage({ onNavigate }: ProcedureListPageProps
             ¿Está seguro de eliminar <strong>{deleteTarget?.nombre}</strong>?
           </p>
           <p className={styles.deleteConfirmSubtext}>
-            Esta acción no se puede deshacer.
+            El procedimiento se marcará como inactivo y dejará de estar disponible para nuevas citas.
           </p>
           {deleteError && <p className={styles.deleteError}>{deleteError}</p>}
           <div className={styles.deleteActions}>

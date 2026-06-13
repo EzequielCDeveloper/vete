@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { FaFolderOpen, FaCalendarAlt, FaChevronDown, FaChevronUp, FaHistory, FaFilter, FaTimes } from 'react-icons/fa';
 import { medicalRecordApi, userApi } from '../../data/services/apiService';
 import type { MedicalRecord } from '../../data/services/apiService';
+import { sanitizeDate } from '../../shared/utils';
 import { Card, Badge, Breadcrumbs, SearchBox, FormError } from '../../shared/ui';
 import { AppointmentDetailModal } from '../appointments/AppointmentDetailModal';
 import styles from './MedicalHistoryPage.module.css';
@@ -81,7 +82,7 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
       const hasMatchingCita = r.citas.some(c => {
         if (filterProcedimiento && !c.procedimientoNombre.toLowerCase().includes(filterProcedimiento.toLowerCase())) return false;
         if (filterHora && !c.hora.toLowerCase().includes(filterHora.toLowerCase())) return false;
-        if (filterFecha && c.fecha !== filterFecha) return false;
+        if (filterFecha && sanitizeDate(c.fecha) !== filterFecha) return false;
         return true;
       });
       if (!hasMatchingCita) return false;
@@ -217,13 +218,13 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
                         {record.citas?.length || 0} cita{(record.citas?.length || 0) !== 1 ? 's' : ''}
                       </span>
                       <span className={styles.metaDivider}>|</span>
-                      <span className={styles.metaItem}>Creado: {record.fechaCreacion}</span>
+                      <span className={styles.metaItem}>Creado: {sanitizeDate(record.fechaCreacion)}</span>
                       <span className={styles.metaDivider}>|</span>
                       <span className={styles.metaItem}>Creado por: {getUserName(record.createdBy)}</span>
                       {record.ultimaActualizacion !== record.fechaCreacion && (
                         <>
                           <span className={styles.metaDivider}>|</span>
-                          <span className={styles.metaItem}>Actualizado: {record.ultimaActualizacion}</span>
+                          <span className={styles.metaItem}>Actualizado: {sanitizeDate(record.ultimaActualizacion)}</span>
                         </>
                       )}
                     </div>
@@ -252,7 +253,7 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
                           <tbody>
                             {record.citas.map((cita) => (
                               <tr key={cita.citaId}>
-                                <td>{cita.fecha}</td>
+                                <td>{sanitizeDate(cita.fecha)}</td>
                                 <td>{cita.hora}</td>
                                 <td>{cita.procedimientoNombre}</td>
                                 <td>{cita.notas || '—'}</td>

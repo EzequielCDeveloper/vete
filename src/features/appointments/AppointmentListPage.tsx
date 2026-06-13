@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { FaCalendarCheck, FaFilter, FaTimes, FaHistory, FaFolderOpen, FaExchangeAlt } from 'react-icons/fa';
 import { appointmentApi, patientApi, procedureApi, userApi, medicalRecordApi } from '../../data/services/apiService';
 import type { Appointment, Patient, Procedure, MedicalRecord } from '../../data/services/apiService';
+import { sanitizeDate } from '../../shared/utils';
 import { Card, Badge, SearchBox, Breadcrumbs, Modal, FormSuccess } from '../../shared/ui';
 import { AppointmentDetailModal } from './AppointmentDetailModal';
 import MedicalHistorySelectorModal from '../medical/MedicalHistorySelectorModal';
@@ -82,7 +83,7 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
   // Filter logic — AND across all active filters
   const filtered = appointments.filter((apt) => {
     if (statusFilter && apt.estado !== statusFilter) return false;
-    if (filterFecha && !apt.fecha.startsWith(filterFecha)) return false;
+    if (filterFecha && !sanitizeDate(apt.fecha).startsWith(filterFecha)) return false;
     if (filterHora && !apt.hora.toLowerCase().includes(filterHora.toLowerCase())) return false;
 
     if (search) {
@@ -324,7 +325,7 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
                     <td>{idx + 1}</td>
                     <td>{getPatientName(apt.pacienteId)}</td>
                     <td>{getPatientPropietario(apt.pacienteId)}</td>
-                    <td>{apt.fecha}</td>
+                    <td>{sanitizeDate(apt.fecha)}</td>
                     <td>{apt.hora}</td>
                     <td>{getProcedureName(apt.procedimientoId)}</td>
                     <td>

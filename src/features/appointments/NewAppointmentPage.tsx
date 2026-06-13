@@ -10,6 +10,12 @@ function getTodayISO(): string {
   return new Date().toISOString().split('T')[0];
 }
 
+function getMaxDateISO(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString().split('T')[0];
+}
+
 function getCurrentTime(): string {
   const now = new Date();
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -142,10 +148,10 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
     }
 
     const telefono = sanitizeDigits(pacienteTelefono);
-    if (telefono.length < 5) {
-      errors.telefono = 'Número telefónico incompleto. Debe tener al menos 5 dígitos.';
-    } else if (telefono.length > 15) {
-      errors.telefono = 'El teléfono no puede exceder los 15 dígitos.';
+    if (telefono.length < 10) {
+      errors.telefono = 'El teléfono debe tener al menos 10 dígitos.';
+    } else if (telefono.length > 14) {
+      errors.telefono = 'El teléfono no puede exceder los 14 dígitos.';
     }
 
     const propietario = sanitizeLetters(pacientePropietario);
@@ -208,6 +214,12 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
     const today = getTodayISO();
     if (fecha < today) {
       setError('La fecha no puede ser anterior a hoy.');
+      return;
+    }
+    // Validate date is not more than 1 year in the future
+    const maxDate = getMaxDateISO();
+    if (fecha > maxDate) {
+      setError('La fecha no puede ser superior a un año a partir de hoy.');
       return;
     }
     if (fecha === today) {
@@ -443,7 +455,7 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                       value={pacienteTelefono}
                       onChange={handleDigitChange(setPacienteTelefono)}
                       onKeyDown={handleDigitKeyDown}
-                      maxLength={15}
+                      maxLength={14}
                       className={fieldErrors.telefono ? styles.inputError : ''}
                       placeholder="Ej: 987654321"
                       required
@@ -495,13 +507,14 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                     <label className={styles.label}>
                       Fecha <span className="required">*</span>
                     </label>
-                    <input
-                      type="date"
-                      value={fecha}
-                      onChange={(e) => setFecha(e.target.value)}
-                      min={getTodayISO()}
-                      required
-                    />
+                      <input
+                        type="date"
+                        value={fecha}
+                        onChange={(e) => setFecha(e.target.value)}
+                        min={getTodayISO()}
+                        max={getMaxDateISO()}
+                        required
+                      />
                   </div>
                 </div>
                 <div className={styles.formRow}>

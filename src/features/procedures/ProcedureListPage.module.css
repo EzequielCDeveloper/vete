@@ -23,7 +23,41 @@
 
 .toolbar {
   display: flex;
+  gap: 0.5rem;
   margin-bottom: 1rem;
+}
+
+.filterToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.filterToggle:hover {
+  background: var(--bg-secondary);
+  color: var(--text);
+}
+
+.filterToggleActive {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.filterToggleActive:hover {
+  background: var(--primary-dark);
+  color: white;
 }
 
 .tableResponsive {

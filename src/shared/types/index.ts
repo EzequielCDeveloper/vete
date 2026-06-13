@@ -27,6 +27,7 @@ export interface Procedure {
   descripcion: string;
   precio: number;
   createdBy?: string;
+  active?: boolean;
 }
 
 export interface MedicalRecord {
