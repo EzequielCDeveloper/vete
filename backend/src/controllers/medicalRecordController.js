@@ -89,11 +89,19 @@ exports.create = async (req, res) => {
 
     if (medicalRecordId) {
       // Link existing appointment to existing medical folder
-      // New FK: appointment points to folder (one folder → many citas)
+      // NOTE: additional_note is the appointment's own note, NOT the historial notes.
+      // We do NOT touch it here — it was set when the appointment was created.
       await pool.execute(
-        'UPDATE Medical_appointment SET id_medical_history = ?, additional_note = COALESCE(?, additional_note), active_medical_history = 1 WHERE id_medical_appointment = ?',
-        [Number(medicalRecordId), notas || null, Number(citaId)]
+        'UPDATE Medical_appointment SET id_medical_history = ?, active_medical_history = 1 WHERE id_medical_appointment = ?',
+        [Number(medicalRecordId), Number(citaId)]
       );
+      // Append historial notes to the existing record's medical_notes
+      if (notas) {
+        await pool.execute(
+          "UPDATE Medical_history SET medical_notes = CONCAT(COALESCE(medical_notes, ''), CASE WHEN COALESCE(medical_notes, '') = '' THEN '' ELSE '\n---\n' END, ?) WHERE id_medical_history = ?",
+          [notas, Number(medicalRecordId)]
+        );
+      }
     } else {
       // Original behavior: create a new medical record from appointment
       const [rows] = await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [

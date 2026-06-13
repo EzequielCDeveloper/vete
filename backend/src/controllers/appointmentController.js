@@ -42,16 +42,17 @@ exports.create = async (req, res) => {
     // Save to medical history if requested
     if (req.body.guardarHistorial) {
       if (medicalRecordId && result?.id) {
-        // User selected an existing Medical_history folder
-        // Link the appointment to it AND save the notes
+        // Link the appointment to the existing Medical_history folder
+        // NOTE: additional_note was already set by sp_create_appointment with the
+        // appointment's own `notas` — we do NOT overwrite it with historialNotas.
         await pool.execute(
-          'UPDATE Medical_appointment SET id_medical_history = ?, additional_note = COALESCE(?, additional_note), active_medical_history = 1 WHERE id_medical_appointment = ?',
-          [Number(medicalRecordId), req.body.historialNotas || null, Number(result.id)]
+          'UPDATE Medical_appointment SET id_medical_history = ?, active_medical_history = 1 WHERE id_medical_appointment = ?',
+          [Number(medicalRecordId), Number(result.id)]
         );
         // Append historialNotas to the existing record's medical_notes
         if (req.body.historialNotas) {
           await pool.execute(
-            "UPDATE Medical_history SET medical_notes = CONCAT(COALESCE(medical_notes, ''), '\n---\n', ?) WHERE id_medical_history = ?",
+            "UPDATE Medical_history SET medical_notes = CONCAT(COALESCE(medical_notes, ''), CASE WHEN COALESCE(medical_notes, '') = '' THEN '' ELSE '\n---\n' END, ?) WHERE id_medical_history = ?",
             [req.body.historialNotas, Number(medicalRecordId)]
           );
         }
