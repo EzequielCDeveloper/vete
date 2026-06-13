@@ -39,23 +39,37 @@ exports.create = async (req, res) => {
     const result = rows[0]?.[0];
     const id = String(result?.id || '0');
 
-    // Save to medical history if requested (creates new folder)
+    // Save to medical history if requested
     if (req.body.guardarHistorial) {
-      const [hRows] = await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [
-        Number(result?.id), req.user.id, req.body.historialNotas || null,
-      ]);
-      // Also set the new FK: appointment points to folder
-      const folderId = hRows[0]?.[0]?.id;
-      if (folderId) {
+      if (medicalRecordId && result?.id) {
+        // User selected an existing Medical_history folder
+        // Link the appointment to it AND save the notes
         await pool.execute(
-          'UPDATE Medical_appointment SET id_medical_history = ? WHERE id_medical_appointment = ?',
-          [Number(folderId), Number(result.id)]
+          'UPDATE Medical_appointment SET id_medical_history = ?, additional_note = COALESCE(?, additional_note), active_medical_history = 1 WHERE id_medical_appointment = ?',
+          [Number(medicalRecordId), req.body.historialNotas || null, Number(result.id)]
         );
+        // Append historialNotas to the existing record's medical_notes
+        if (req.body.historialNotas) {
+          await pool.execute(
+            "UPDATE Medical_history SET medical_notes = CONCAT(COALESCE(medical_notes, ''), '\n---\n', ?) WHERE id_medical_history = ?",
+            [req.body.historialNotas, Number(medicalRecordId)]
+          );
+        }
+      } else {
+        // No existing record selected — create a new Medical_history folder
+        const [hRows] = await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [
+          Number(result?.id), req.user.id, req.body.historialNotas || null,
+        ]);
+        const folderId = hRows[0]?.[0]?.id;
+        if (folderId) {
+          await pool.execute(
+            'UPDATE Medical_appointment SET id_medical_history = ? WHERE id_medical_appointment = ?',
+            [Number(folderId), Number(result.id)]
+          );
+        }
       }
-    }
-
-    // Link to an existing medical folder if provided (new FK direction)
-    if (medicalRecordId && result?.id) {
+    } else if (medicalRecordId && result?.id) {
+      // Just link without saving to history (e.g. from AppointmentListPage)
       await pool.execute(
         'UPDATE Medical_appointment SET id_medical_history = ? WHERE id_medical_appointment = ?',
         [Number(medicalRecordId), Number(result.id)]
