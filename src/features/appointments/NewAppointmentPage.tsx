@@ -108,11 +108,22 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
     const nombre = sanitizeLetters(pacienteNombre);
     if (nombre.length < 2) {
       errors.nombre = 'El nombre debe tener al menos 2 caracteres y solo letras.';
+    } else if (nombre.length > 20) {
+      errors.nombre = 'El nombre no puede exceder los 20 caracteres.';
+    }
+
+    const edad = sanitizeDigits(pacienteEdad);
+    if (edad.length === 0) {
+      errors.edad = 'La edad es obligatoria (solo números).';
+    } else if (edad.length > 2) {
+      errors.edad = 'La edad no puede exceder los 2 dígitos.';
     }
 
     const raza = sanitizeLetters(pacienteRaza);
-    if (raza.length < 3) {
-      errors.raza = 'La raza debe tener al menos 3 caracteres y solo letras.';
+    if (raza.length < 2) {
+      errors.raza = 'La raza debe tener al menos 2 caracteres y solo letras.';
+    } else if (raza.length > 26) {
+      errors.raza = 'La raza no puede exceder los 26 caracteres.';
     }
 
     const telefono = sanitizeDigits(pacienteTelefono);
@@ -123,6 +134,8 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
     const propietario = sanitizeLetters(pacientePropietario);
     if (propietario.length === 0) {
       errors.propietario = 'El nombre del propietario es obligatorio y solo letras.';
+    } else if (propietario.length > 30) {
+      errors.propietario = 'El propietario no puede exceder los 30 caracteres.';
     }
 
     setFieldErrors(errors);
@@ -317,6 +330,7 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                       value={pacienteNombre}
                       onChange={handleLetterChange(setPacienteNombre)}
                       onKeyDown={handleLetterKeyDown}
+                      maxLength={20}
                       className={fieldErrors.nombre ? styles.inputError : ''}
                       required
                     />
@@ -352,10 +366,14 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                     <input
                       type="text"
                       value={pacienteEdad}
-                      onChange={(e) => setPacienteEdad(e.target.value)}
+                      onChange={handleDigitChange(setPacienteEdad)}
+                      onKeyDown={handleDigitKeyDown}
+                      maxLength={2}
                       placeholder="ej: 3 años"
+                      className={fieldErrors.edad ? styles.inputError : ''}
                       required
                     />
+                    {fieldErrors.edad && <span className={styles.fieldError}>{fieldErrors.edad}</span>}
                   </div>
                   <div className={styles.formGroup}>
                     <label className={styles.label}>
@@ -366,6 +384,7 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                       value={pacienteRaza}
                       onChange={handleLetterChange(setPacienteRaza)}
                       onKeyDown={handleLetterKeyDown}
+                      maxLength={26}
                       className={fieldErrors.raza ? styles.inputError : ''}
                       required
                     />
@@ -382,6 +401,7 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                       value={pacientePropietario}
                       onChange={handleLetterChange(setPacientePropietario)}
                       onKeyDown={handleLetterKeyDown}
+                      maxLength={30}
                       className={fieldErrors.propietario ? styles.inputError : ''}
                       required
                     />
