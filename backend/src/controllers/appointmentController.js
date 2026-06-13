@@ -49,23 +49,31 @@ exports.create = async (req, res) => {
           'UPDATE Medical_appointment SET id_medical_history = ?, active_medical_history = 1 WHERE id_medical_appointment = ?',
           [Number(medicalRecordId), Number(result.id)]
         );
-        // Append historialNotas to the existing record's medical_notes
+        // Save medical_notes on the appointment itself
         if (req.body.historialNotas) {
           await pool.execute(
-            "UPDATE Medical_history SET medical_notes = CONCAT(COALESCE(medical_notes, ''), CASE WHEN COALESCE(medical_notes, '') = '' THEN '' ELSE '\n---\n' END, ?) WHERE id_medical_history = ?",
-            [req.body.historialNotas, Number(medicalRecordId)]
+            'UPDATE Medical_appointment SET medical_notes = ? WHERE id_medical_appointment = ?',
+            [req.body.historialNotas, Number(result.id)]
           );
         }
       } else {
         // No existing record selected — create a new Medical_history folder
-        const [hRows] = await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [
-          Number(result?.id), req.user.id, req.body.historialNotas || null,
+        // NOTE: sp_save_appointment_to_history no longer accepts medical_notes
+        const [hRows] = await pool.execute('CALL sp_save_appointment_to_history(?,?)', [
+          Number(result?.id), req.user.id,
         ]);
         const folderId = hRows[0]?.[0]?.id;
         if (folderId) {
           await pool.execute(
             'UPDATE Medical_appointment SET id_medical_history = ? WHERE id_medical_appointment = ?',
             [Number(folderId), Number(result.id)]
+          );
+        }
+        // Save medical_notes on the appointment
+        if (req.body.historialNotas) {
+          await pool.execute(
+            'UPDATE Medical_appointment SET medical_notes = ? WHERE id_medical_appointment = ?',
+            [req.body.historialNotas, Number(result.id)]
           );
         }
       }

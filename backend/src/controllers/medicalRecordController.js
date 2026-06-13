@@ -22,7 +22,7 @@ exports.getAll = async (_req, res) => {
             ma.time_appointment AS hora,
             vp.name AS procedimientoNombre,
             COALESCE(ma.additional_note, '') AS notas,
-            COALESCE(mh.medical_notes, '') AS historialMedico
+            COALESCE(ma.medical_notes, '') AS historialMedico
           FROM Medical_appointment ma
           INNER JOIN Medical_history mh ON ma.id_medical_history = mh.id_medical_history
           INNER JOIN Veterian_procedures vp ON ma.id_veterian_procedure = vp.id_veterian_procedure
@@ -38,7 +38,7 @@ exports.getAll = async (_req, res) => {
             ma.time_appointment AS hora,
             vp.name AS procedimientoNombre,
             COALESCE(ma.additional_note, '') AS notas,
-            COALESCE(mh.medical_notes, '') AS historialMedico
+            COALESCE(ma.medical_notes, '') AS historialMedico
           FROM Medical_history mh
           INNER JOIN Medical_appointment ma ON mh.id_medical_appointment = ma.id_medical_appointment
           INNER JOIN Veterian_procedures vp ON ma.id_veterian_procedure = vp.id_veterian_procedure
@@ -95,18 +95,25 @@ exports.create = async (req, res) => {
         'UPDATE Medical_appointment SET id_medical_history = ?, active_medical_history = 1 WHERE id_medical_appointment = ?',
         [Number(medicalRecordId), Number(citaId)]
       );
-      // Append historial notes to the existing record's medical_notes
+      // Save historial notes on the appointment itself
       if (notas) {
         await pool.execute(
-          "UPDATE Medical_history SET medical_notes = CONCAT(COALESCE(medical_notes, ''), CASE WHEN COALESCE(medical_notes, '') = '' THEN '' ELSE '\n---\n' END, ?) WHERE id_medical_history = ?",
-          [notas, Number(medicalRecordId)]
+          "UPDATE Medical_appointment SET medical_notes = CONCAT(COALESCE(medical_notes, ''), CASE WHEN COALESCE(medical_notes, '') = '' THEN '' ELSE '\n---\n' END, ?) WHERE id_medical_appointment = ?",
+          [notas, Number(citaId)]
         );
       }
     } else {
       // Original behavior: create a new medical record from appointment
-      const [rows] = await pool.execute('CALL sp_save_appointment_to_history(?,?,?)', [
-        Number(citaId), req.user.id, notas || null,
+      const [rows] = await pool.execute('CALL sp_save_appointment_to_history(?,?)', [
+        Number(citaId), req.user.id,
       ]);
+      // Save historial notes on the appointment after creating folder
+      if (notas) {
+        await pool.execute(
+          'UPDATE Medical_appointment SET medical_notes = ? WHERE id_medical_appointment = ?',
+          [notas, Number(citaId)]
+        );
+      }
       // Also set the new FK on the appointment for the new query to work
       const folderId = rows[0]?.[0]?.id;
       if (folderId) {
@@ -192,7 +199,7 @@ exports.getArchived = async (_req, res) => {
             ma.time_appointment AS hora,
             vp.name AS procedimientoNombre,
             COALESCE(ma.additional_note, '') AS notas,
-            COALESCE(mh.medical_notes, '') AS historialMedico
+            COALESCE(ma.medical_notes, '') AS historialMedico
           FROM Medical_appointment ma
           INNER JOIN Medical_history mh ON ma.id_medical_history = mh.id_medical_history
           INNER JOIN Veterian_procedures vp ON ma.id_veterian_procedure = vp.id_veterian_procedure
@@ -207,7 +214,7 @@ exports.getArchived = async (_req, res) => {
             ma.time_appointment AS hora,
             vp.name AS procedimientoNombre,
             COALESCE(ma.additional_note, '') AS notas,
-            COALESCE(mh.medical_notes, '') AS historialMedico
+            COALESCE(ma.medical_notes, '') AS historialMedico
           FROM Medical_history mh
           INNER JOIN Medical_appointment ma ON mh.id_medical_appointment = ma.id_medical_appointment
           INNER JOIN Veterian_procedures vp ON ma.id_veterian_procedure = vp.id_veterian_procedure
