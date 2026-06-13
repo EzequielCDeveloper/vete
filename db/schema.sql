@@ -245,6 +245,12 @@ BEGIN
 	SELECT LAST_INSERT_ID() AS id;
 END //
 
+CREATE PROCEDURE sp_delete_procedure(IN p_id INT)
+BEGIN
+	DELETE FROM Veterian_procedures WHERE id_veterian_procedure = p_id;
+	SELECT ROW_COUNT() AS affected;
+END //
+
 CREATE PROCEDURE sp_update_procedure(
 	IN p_id INT,
 	IN p_name VARCHAR(255),

@@ -10,5 +10,6 @@ router.get('/', auth, procedureController.getAll);
 router.get('/:id', auth, procedureController.getById);
 router.post('/', auth, requireRole('administrador', 'veterinario'), validate(procedureSchema), procedureController.create);
 router.put('/:id', auth, requireRole('administrador', 'veterinario'), validateId('id'), validate(procedureSchema), procedureController.update);
+router.delete('/:id', auth, requireRole('administrador', 'veterinario'), validateId('id'), procedureController.delete);
 
 module.exports = router;

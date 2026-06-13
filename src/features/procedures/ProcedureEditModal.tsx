@@ -11,6 +11,30 @@ interface ProcedureEditModalProps {
   onSaved: () => void;
 }
 
+// ── Sanitizers ──────────────────────────────────────────────
+
+const sanitizeLettersAndNumbers = (value: string) =>
+  value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s]/g, '');
+
+const sanitizeDigitsAndDecimal = (value: string) =>
+  value.replace(/[^\d.]/g, '');
+
+const handleLetterNumberKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const key = e.key;
+  if (key.length === 1 && !/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s]$/.test(key) && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault();
+  }
+};
+
+const handlePriceKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const key = e.key;
+  if (key.length === 1 && !/^[\d.]$/.test(key) && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault();
+  }
+};
+
+// ── Component ───────────────────────────────────────────────
+
 export function ProcedureEditModal({ procedureId, isOpen, onClose, onSaved }: ProcedureEditModalProps) {
   const isCreating = procedureId === null;
   const [nombre, setNombre] = useState('');
@@ -18,6 +42,7 @@ export function ProcedureEditModal({ procedureId, isOpen, onClose, onSaved }: Pr
   const [precio, setPrecio] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!isOpen) return;
@@ -27,45 +52,69 @@ export function ProcedureEditModal({ procedureId, isOpen, onClose, onSaved }: Pr
         setDescripcion(proc.descripcion);
         setPrecio(String(proc.precio));
         setError(null);
+        setFieldErrors({});
       }).catch(() => {});
     } else {
       setNombre('');
       setDescripcion('');
       setPrecio('');
       setError(null);
+      setFieldErrors({});
     }
   }, [procedureId, isOpen]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
 
-    if (!nombre.trim() || !descripcion.trim() || !precio) {
-      setError('Todos los campos son obligatorios.');
-      return;
+    const errs: Record<string, string> = {};
+
+    const cleanNombre = sanitizeLettersAndNumbers(nombre).trim();
+    if (!cleanNombre) {
+      errs.nombre = 'El nombre del procedimiento es obligatorio.';
+    } else if (cleanNombre.length < 2) {
+      errs.nombre = 'El nombre debe tener al menos 2 caracteres.';
+    } else if (cleanNombre.length > 30) {
+      errs.nombre = 'El nombre no puede exceder los 30 caracteres.';
     }
 
-    const precioNum = parseFloat(precio);
-    if (isNaN(precioNum) || precioNum < 0) {
-      setError('El precio debe ser un número válido mayor o igual a 0.');
-      return;
+    const cleanDesc = sanitizeLettersAndNumbers(descripcion).trim();
+    if (!cleanDesc) {
+      errs.descripcion = 'La descripción es obligatoria.';
+    } else if (cleanDesc.length < 2) {
+      errs.descripcion = 'La descripción debe tener al menos 2 caracteres.';
+    } else if (cleanDesc.length > 30) {
+      errs.descripcion = 'La descripción no puede exceder los 30 caracteres.';
     }
+
+    const cleanPrecio = sanitizeDigitsAndDecimal(precio);
+    if (!cleanPrecio) {
+      errs.precio = 'El precio es obligatorio.';
+    } else if (cleanPrecio.length > 5) {
+      errs.precio = 'El precio no puede exceder los 5 caracteres.';
+    } else {
+      const precioNum = parseFloat(cleanPrecio);
+      if (isNaN(precioNum) || precioNum < 0) {
+        errs.precio = 'El precio debe ser un número válido mayor o igual a 0.';
+      }
+    }
+
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
 
     setSaving(true);
 
     try {
+      const payload = {
+        nombre: cleanNombre,
+        descripcion: cleanDesc,
+        precio: parseFloat(cleanPrecio),
+      };
       if (isCreating) {
-        await procedureApi.create({
-          nombre: nombre.trim(),
-          descripcion: descripcion.trim(),
-          precio: precioNum,
-        });
+        await procedureApi.create(payload);
       } else if (procedureId) {
-        await procedureApi.update(procedureId, {
-          nombre: nombre.trim(),
-          descripcion: descripcion.trim(),
-          precio: precioNum,
-        });
+        await procedureApi.update(procedureId, payload);
       }
       onSaved();
     } catch (err) {
@@ -85,9 +134,13 @@ export function ProcedureEditModal({ procedureId, isOpen, onClose, onSaved }: Pr
           <input
             type="text"
             value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
+            onChange={(e) => setNombre(sanitizeLettersAndNumbers(e.target.value))}
+            onKeyDown={handleLetterNumberKeyDown}
+            maxLength={30}
+            className={fieldErrors.nombre ? styles.inputError : ''}
             required
           />
+          {fieldErrors.nombre && <span className={styles.fieldError}>{fieldErrors.nombre}</span>}
         </div>
 
         <div className={styles.formGroup}>
@@ -95,21 +148,29 @@ export function ProcedureEditModal({ procedureId, isOpen, onClose, onSaved }: Pr
           <textarea
             rows={3}
             value={descripcion}
-            onChange={(e) => setDescripcion(e.target.value)}
+            onChange={(e) => setDescripcion(sanitizeLettersAndNumbers(e.target.value))}
+            onKeyDown={handleLetterNumberKeyDown}
+            maxLength={30}
+            className={fieldErrors.descripcion ? styles.inputError : ''}
             required
           />
+          {fieldErrors.descripcion && <span className={styles.fieldError}>{fieldErrors.descripcion}</span>}
         </div>
 
         <div className={styles.formGroup}>
           <label className={styles.label}>Precio ($)</label>
           <input
-            type="number"
-            step="0.01"
-            min="0"
+            type="text"
+            inputMode="decimal"
             value={precio}
-            onChange={(e) => setPrecio(e.target.value)}
+            onChange={(e) => setPrecio(sanitizeDigitsAndDecimal(e.target.value))}
+            onKeyDown={handlePriceKeyDown}
+            maxLength={5}
+            placeholder="0.00"
+            className={fieldErrors.precio ? styles.inputError : ''}
             required
           />
+          {fieldErrors.precio && <span className={styles.fieldError}>{fieldErrors.precio}</span>}
         </div>
 
         <FormError message={error} />

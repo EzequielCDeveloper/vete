@@ -89,3 +89,19 @@
 .btnSecondary:hover {
   background: #d1d5db;
 }
+
+.inputError {
+  border-color: #e74c3c !important;
+}
+
+.inputError:focus {
+  border-color: #e74c3c !important;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.12) !important;
+}
+
+.fieldError {
+  display: block;
+  font-size: 0.78rem;
+  color: #e74c3c;
+  margin-top: 0.25rem;
+}

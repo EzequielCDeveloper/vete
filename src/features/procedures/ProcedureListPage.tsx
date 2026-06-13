@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FaSyringe, FaPlus, FaList } from 'react-icons/fa';
+import { FaSyringe, FaPlus, FaList, FaTrash, FaExclamationTriangle } from 'react-icons/fa';
 import { procedureApi, userApi } from '../../data/services/apiService';
 import type { Procedure } from '../../data/services/apiService';
-import { Card, Breadcrumbs } from '../../shared/ui';
+import { Card, Breadcrumbs, Modal } from '../../shared/ui';
 import { formatCurrency } from '../../shared/utils';
 import { ProcedureEditModal } from './ProcedureEditModal';
 import styles from './ProcedureListPage.module.css';
@@ -16,6 +16,9 @@ export default function ProcedureListPage({ onNavigate }: ProcedureListPageProps
   const [usersMap, setUsersMap] = useState<Record<string, string>>({});
   const [editId, setEditId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Procedure | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const getUserName = (username: string | undefined) => {
     if (!username) return '—';
@@ -38,6 +41,21 @@ export default function ProcedureListPage({ onNavigate }: ProcedureListPageProps
   useEffect(() => {
     loadProcedures();
   }, [loadProcedures]);
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await procedureApi.delete(deleteTarget.id);
+      setDeleteTarget(null);
+      loadProcedures();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Error al eliminar el procedimiento');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div>
@@ -98,6 +116,13 @@ export default function ProcedureListPage({ onNavigate }: ProcedureListPageProps
                       >
                         Modificar
                       </button>
+                      <button
+                        className={styles.deleteBtn}
+                        onClick={() => setDeleteTarget(proc)}
+                        title="Eliminar procedimiento"
+                      >
+                        <FaTrash /> Eliminar
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -124,6 +149,41 @@ export default function ProcedureListPage({ onNavigate }: ProcedureListPageProps
         onClose={() => setEditId(null)}
         onSaved={() => { loadProcedures(); setEditId(null); }}
       />
+
+      {/* Delete confirmation modal */}
+      <Modal
+        isOpen={deleteTarget !== null}
+        onClose={() => { setDeleteTarget(null); setDeleteError(null); }}
+        title="Eliminar Procedimiento"
+        size="sm"
+      >
+        <div className={styles.deleteConfirm}>
+          <FaExclamationTriangle className={styles.deleteWarningIcon} />
+          <p className={styles.deleteConfirmText}>
+            ¿Está seguro de eliminar <strong>{deleteTarget?.nombre}</strong>?
+          </p>
+          <p className={styles.deleteConfirmSubtext}>
+            Esta acción no se puede deshacer.
+          </p>
+          {deleteError && <p className={styles.deleteError}>{deleteError}</p>}
+          <div className={styles.deleteActions}>
+            <button
+              className={styles.deleteConfirmBtn}
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? 'Eliminando...' : 'Sí, Eliminar'}
+            </button>
+            <button
+              className={styles.deleteCancelBtn}
+              onClick={() => { setDeleteTarget(null); setDeleteError(null); }}
+              disabled={deleting}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

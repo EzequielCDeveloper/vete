@@ -193,6 +193,11 @@ export const procedureApi = {
       body: JSON.stringify(data),
     });
   },
+  delete(id: string): Promise<{ success: boolean }> {
+    return request<{ success: boolean }>(`/procedures/${id}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // ─── Appointments ─────────────────────────────────────────────

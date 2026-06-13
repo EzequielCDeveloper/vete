@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { FaFolderOpen, FaCalendarAlt, FaChevronDown, FaChevronUp, FaHistory, FaFilter, FaTimes } from 'react-icons/fa';
 import { medicalRecordApi, userApi } from '../../data/services/apiService';
 import type { MedicalRecord } from '../../data/services/apiService';
-import { Card, Badge, Breadcrumbs, SearchBox } from '../../shared/ui';
+import { Card, Badge, Breadcrumbs, SearchBox, FormError } from '../../shared/ui';
 import { AppointmentDetailModal } from '../appointments/AppointmentDetailModal';
 import styles from './MedicalHistoryPage.module.css';
 
@@ -16,6 +16,7 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detailCitaId, setDetailCitaId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Advanced filter state (no dueño filter — medical records don't have propietario info)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -26,6 +27,7 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
   const [filterFecha, setFilterFecha] = useState('');
 
   const loadRecords = useCallback(async () => {
+    setLoadError(null);
     try {
       const [recs, users] = await Promise.all([
         medicalRecordApi.getAll(),
@@ -33,8 +35,8 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
       ]);
       setRecords(recs);
       setUsersMap(Object.fromEntries(users.map(u => [u.username, u.nombre])));
-    } catch {
-      // silent
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : 'Error al cargar los historiales médicos');
     }
   }, []);
 
@@ -72,22 +74,17 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
     // Advanced filters
     if (filterAnimal && !r.pacienteNombre.toLowerCase().includes(filterAnimal.toLowerCase())) return false;
     if (filterEspecie && !r.pacienteEspecie.toLowerCase().includes(filterEspecie.toLowerCase())) return false;
-    if (filterFecha && !r.fechaCreacion.startsWith(filterFecha)) return false;
 
-    // Procedimiento filter — check citas array
-    if (filterProcedimiento && r.citas) {
-      const hasProcedure = r.citas.some(c =>
-        c.procedimientoNombre.toLowerCase().includes(filterProcedimiento.toLowerCase())
-      );
-      if (!hasProcedure) return false;
-    }
-
-    // Hora filter — check citas array
-    if (filterHora && r.citas) {
-      const hasHora = r.citas.some(c =>
-        c.hora.toLowerCase().includes(filterHora.toLowerCase())
-      );
-      if (!hasHora) return false;
+    // Citas-level filters (procedimiento, hora, fecha) — check if ANY cita in the record matches
+    if (filterProcedimiento || filterHora || filterFecha) {
+      if (!r.citas || r.citas.length === 0) return false;
+      const hasMatchingCita = r.citas.some(c => {
+        if (filterProcedimiento && !c.procedimientoNombre.toLowerCase().includes(filterProcedimiento.toLowerCase())) return false;
+        if (filterHora && !c.hora.toLowerCase().includes(filterHora.toLowerCase())) return false;
+        if (filterFecha && c.fecha !== filterFecha) return false;
+        return true;
+      });
+      if (!hasMatchingCita) return false;
     }
 
     return true;
@@ -111,6 +108,8 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
           Expedientes digitales con el historial clínico de los pacientes.
         </p>
       </div>
+
+      {loadError && <FormError message={loadError} />}
 
       {records.length === 0 ? (
         <Card>

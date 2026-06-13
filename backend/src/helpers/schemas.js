@@ -17,24 +17,27 @@ const { z } = require('zod');
 const patientSchema = z.object({
   nombre: z
     .string()
-    .min(2, 'El nombre debe tener al menos 2 caracteres y solo letras.')
-    .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/, 'El nombre solo puede contener letras.'),
+    .min(2, 'El nombre debe tener al menos 2 caracteres.')
+    .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s]+$/, 'El nombre solo puede contener letras y números.'),
   especie: z.string().optional().default(''),
   edad: z.string().optional().nullable().default(''),
   raza: z
     .string()
     .min(3, 'La raza debe tener al menos 3 caracteres y solo letras.')
+    .max(20, 'La raza no puede exceder los 20 caracteres.')
     .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/, 'La raza solo puede contener letras.')
     .optional()
     .default(''),
   propietario: z
     .string()
-    .min(1, 'El propietario es obligatorio y solo letras.')
+    .min(5, 'El propietario debe tener al menos 5 caracteres y solo letras.')
+    .max(30, 'El propietario no puede exceder los 30 caracteres.')
     .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]+$/, 'El propietario solo puede contener letras.')
     .transform(v => v.toUpperCase()),
   telefono: z
     .string()
-    .min(8, 'Número telefónico incompleto. Debe tener al menos 8 dígitos.')
+    .min(5, 'Número telefónico incompleto. Debe tener al menos 5 dígitos.')
+    .max(15, 'El teléfono no puede exceder los 15 dígitos.')
     .regex(/^\d+$/, 'El teléfono solo puede contener números.'),
 });
 
@@ -62,8 +65,16 @@ const updateAppointmentSchema = z.object({
 // ─── Procedure ────────────────────────────────────────────────
 
 const procedureSchema = z.object({
-  nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  descripcion: z.string().min(2, 'La descripción debe tener al menos 2 caracteres'),
+  nombre: z
+    .string()
+    .min(2, 'El nombre debe tener al menos 2 caracteres')
+    .max(30, 'El nombre no puede exceder los 30 caracteres')
+    .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s]+$/, 'El nombre solo puede contener letras y números.'),
+  descripcion: z
+    .string()
+    .min(2, 'La descripción debe tener al menos 2 caracteres')
+    .max(30, 'La descripción no puede exceder los 30 caracteres')
+    .regex(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s]+$/, 'La descripción solo puede contener letras y números.'),
   precio: z.coerce.number().positive('El precio debe ser un número positivo'),
 });
 

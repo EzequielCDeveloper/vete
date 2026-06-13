@@ -69,14 +69,27 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
   const sanitizeLetters = (value: string) =>
     value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]/g, '');
 
+  const sanitizeLettersAndNumbers = (value: string) =>
+    value.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s]/g, '');
+
   const sanitizeDigits = (value: string) =>
     value.replace(/[^\d]/g, '');
+
+  const sanitizeDigitsAndDecimal = (value: string) =>
+    value.replace(/[^\d.]/g, '');
 
   // ── Input key filters ─────────────────────────────────────────
 
   const handleLetterKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const key = e.key;
     if (key.length === 1 && !/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ\s]$/.test(key) && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+    }
+  };
+
+  const handleLetterNumberKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const key = e.key;
+    if (key.length === 1 && !/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s]$/.test(key) && !e.ctrlKey && !e.metaKey) {
       e.preventDefault();
     }
   };
@@ -95,6 +108,11 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
       setter(sanitizeLetters(e.target.value));
     };
 
+  const handleLetterNumberChange = (setter: (v: string) => void) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setter(sanitizeLettersAndNumbers(e.target.value));
+    };
+
   const handleDigitChange = (setter: (v: string) => void) =>
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setter(sanitizeDigits(e.target.value));
@@ -105,9 +123,9 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
   const validatePatientFields = (): boolean => {
     const errors: Record<string, string> = {};
 
-    const nombre = sanitizeLetters(pacienteNombre);
+    const nombre = sanitizeLettersAndNumbers(pacienteNombre).trim();
     if (nombre.length < 2) {
-      errors.nombre = 'El nombre debe tener al menos 2 caracteres y solo letras.';
+      errors.nombre = 'El nombre debe tener al menos 2 caracteres (letras o números).';
     } else if (nombre.length > 20) {
       errors.nombre = 'El nombre no puede exceder los 20 caracteres.';
     }
@@ -120,20 +138,22 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
     }
 
     const raza = sanitizeLetters(pacienteRaza);
-    if (raza.length < 2) {
-      errors.raza = 'La raza debe tener al menos 2 caracteres y solo letras.';
-    } else if (raza.length > 26) {
-      errors.raza = 'La raza no puede exceder los 26 caracteres.';
+    if (raza.length < 3) {
+      errors.raza = 'La raza debe tener al menos 3 caracteres y solo letras.';
+    } else if (raza.length > 20) {
+      errors.raza = 'La raza no puede exceder los 20 caracteres.';
     }
 
     const telefono = sanitizeDigits(pacienteTelefono);
-    if (telefono.length < 8) {
-      errors.telefono = 'Número telefónico incompleto. Debe tener al menos 8 dígitos.';
+    if (telefono.length < 5) {
+      errors.telefono = 'Número telefónico incompleto. Debe tener al menos 5 dígitos.';
+    } else if (telefono.length > 15) {
+      errors.telefono = 'El teléfono no puede exceder los 15 dígitos.';
     }
 
     const propietario = sanitizeLetters(pacientePropietario);
-    if (propietario.length === 0) {
-      errors.propietario = 'El nombre del propietario es obligatorio y solo letras.';
+    if (propietario.length < 5) {
+      errors.propietario = 'El propietario debe tener al menos 5 caracteres y solo letras.';
     } else if (propietario.length > 30) {
       errors.propietario = 'El propietario no puede exceder los 30 caracteres.';
     }
@@ -151,7 +171,7 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
     setSaving(true);
     try {
       const patient = await patientApi.create({
-        nombre: sanitizeLetters(pacienteNombre),
+        nombre: sanitizeLettersAndNumbers(pacienteNombre),
         especie: pacienteEspecie,
         edad: pacienteEdad,
         raza: sanitizeLetters(pacienteRaza),
@@ -174,6 +194,16 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
 
     if (!procedimientoId || !fecha || !hora) {
       setError('Todos los campos de la cita son obligatorios.');
+      return;
+    }
+
+    if (notas.trim() && notas.trim().length < 5) {
+      setError('Las notas adicionales deben tener al menos 5 caracteres.');
+      return;
+    }
+
+    if (guardarHistorial && historialNotas.trim().length < 5) {
+      setError('Las notas para el historial médico deben tener al menos 5 caracteres.');
       return;
     }
 
@@ -328,8 +358,8 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                     <input
                       type="text"
                       value={pacienteNombre}
-                      onChange={handleLetterChange(setPacienteNombre)}
-                      onKeyDown={handleLetterKeyDown}
+                      onChange={handleLetterNumberChange(setPacienteNombre)}
+                      onKeyDown={handleLetterNumberKeyDown}
                       maxLength={20}
                       className={fieldErrors.nombre ? styles.inputError : ''}
                       required
@@ -384,7 +414,7 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                       value={pacienteRaza}
                       onChange={handleLetterChange(setPacienteRaza)}
                       onKeyDown={handleLetterKeyDown}
-                      maxLength={26}
+                      maxLength={20}
                       className={fieldErrors.raza ? styles.inputError : ''}
                       required
                     />
@@ -416,6 +446,7 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                       value={pacienteTelefono}
                       onChange={handleDigitChange(setPacienteTelefono)}
                       onKeyDown={handleDigitKeyDown}
+                      maxLength={15}
                       className={fieldErrors.telefono ? styles.inputError : ''}
                       placeholder="Ej: 987654321"
                       required
@@ -471,6 +502,7 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                       type="date"
                       value={fecha}
                       onChange={(e) => setFecha(e.target.value)}
+                      min={getTodayISO()}
                       required
                     />
                   </div>
@@ -495,6 +527,7 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                     placeholder="Indicaciones, síntomas, observaciones..."
                     value={notas}
                     onChange={(e) => setNotas(e.target.value)}
+                    maxLength={50}
                   />
                 </div>
               </div>
@@ -528,6 +561,7 @@ export default function NewAppointmentPage({ onNavigate, onCollapseSidebar }: Ne
                       value={historialNotas}
                       onChange={(e) => setHistorialNotas(e.target.value)}
                       rows={3}
+                      maxLength={50}
                       placeholder="Ingrese notas clínicas, diagnóstico, tratamiento..."
                     />
                   </div>

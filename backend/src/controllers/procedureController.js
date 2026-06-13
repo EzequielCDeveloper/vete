@@ -40,6 +40,17 @@ exports.create = async (req, res) => {
   }
 };
 
+exports.delete = async (req, res) => {
+  try {
+    await pool.execute('CALL sp_delete_procedure(?)', [Number(req.params.id)]);
+
+    // ─── Audit log ────────────────────────────────────
+    await audit.log(pool, req.user.id, 'delete', 'procedure', Number(req.params.id));
+
+    json(res, { success: true });
+  } catch (err) { serverError(res, err); }
+};
+
 exports.update = async (req, res) => {
   try {
     const { nombre, descripcion, precio } = req.body;
