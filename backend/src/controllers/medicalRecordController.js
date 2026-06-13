@@ -166,3 +166,86 @@ exports.getCitasByPatient = async (req, res) => {
     json(res, rows[0]);
   } catch (err) { serverError(res, err); }
 };
+
+exports.getArchived = async (_req, res) => {
+  try {
+    const [rows] = await pool.query('CALL sp_get_archived_medical_records()');
+    const records = rows[0];
+
+    // Fetch citas for archived records (same logic as getAll)
+    let citasMap;
+    try {
+      const [citasRows] = await pool.query(
+        `SELECT recordId, citaId, fecha, hora, procedimientoNombre, notas, historialMedico FROM (
+          SELECT
+            mh.id_medical_history AS recordId,
+            ma.id_medical_appointment AS citaId,
+            ma.date_appointment AS fecha,
+            ma.time_appointment AS hora,
+            vp.name AS procedimientoNombre,
+            COALESCE(ma.additional_note, '') AS notas,
+            COALESCE(mh.medical_notes, '') AS historialMedico
+          FROM Medical_appointment ma
+          INNER JOIN Medical_history mh ON ma.id_medical_history = mh.id_medical_history
+          INNER JOIN Veterian_procedures vp ON ma.id_veterian_procedure = vp.id_veterian_procedure
+          WHERE ma.id_medical_history IS NOT NULL
+
+          UNION
+
+          SELECT
+            mh.id_medical_history AS recordId,
+            ma.id_medical_appointment AS citaId,
+            ma.date_appointment AS fecha,
+            ma.time_appointment AS hora,
+            vp.name AS procedimientoNombre,
+            COALESCE(ma.additional_note, '') AS notas,
+            COALESCE(mh.medical_notes, '') AS historialMedico
+          FROM Medical_history mh
+          INNER JOIN Medical_appointment ma ON mh.id_medical_appointment = ma.id_medical_appointment
+          INNER JOIN Veterian_procedures vp ON ma.id_veterian_procedure = vp.id_veterian_procedure
+          WHERE mh.id_medical_appointment IS NOT NULL
+            AND ma.id_medical_history IS NULL
+        ) AS combined_citas
+        ORDER BY fecha DESC, hora DESC`
+      );
+      citasMap = new Map();
+      for (const c of citasRows) {
+        const rid = String(c.recordId);
+        if (!citasMap.has(rid)) citasMap.set(rid, []);
+        citasMap.get(rid).push({
+          citaId: String(c.citaId),
+          fecha: c.fecha,
+          hora: c.hora,
+          procedimientoNombre: c.procedimientoNombre,
+          notas: c.notas || '',
+          historialMedico: c.historialMedico,
+        });
+      }
+    } catch {
+      citasMap = new Map();
+    }
+
+    json(res, records.map(r => ({
+      ...r,
+      id: String(r.id),
+      pacienteId: String(r.pacienteId),
+      citas: citasMap.get(String(r.id)) || [],
+    })));
+  } catch (err) { serverError(res, err); }
+};
+
+exports.archive = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.execute('CALL sp_archive_medical_record(?)', [Number(id)]);
+    json(res, { success: true });
+  } catch (err) { serverError(res, err); }
+};
+
+exports.unarchive = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.execute('CALL sp_unarchive_medical_record(?)', [Number(id)]);
+    json(res, { success: true });
+  } catch (err) { serverError(res, err); }
+};

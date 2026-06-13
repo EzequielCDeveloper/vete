@@ -10,8 +10,9 @@ import ProcedureListPage from './features/procedures/ProcedureListPage';
 import UserListPage from './features/users/UserListPage';
 import DayAppointmentsPage from './features/appointments/DayAppointmentsPage';
 import MedicalHistoryPage from './features/medical/MedicalHistoryPage';
+import ArchivedHistoryPage from './features/medical/ArchivedHistoryPage';
 
-const VALID_VIEWS = ['dashboard', 'nueva-cita', 'gestion-citas', 'procedimientos', 'usuarios', 'citas-dia', 'historial-medico'] as const;
+const VALID_VIEWS = ['dashboard', 'nueva-cita', 'gestion-citas', 'procedimientos', 'usuarios', 'citas-dia', 'historial-medico', 'historial-medico-archivado'] as const;
 type ViewType = typeof VALID_VIEWS[number];
 
 function isValidView(view: string): view is ViewType {
@@ -26,6 +27,7 @@ const VIEW_TITLES: Record<ViewType, string> = {
   usuarios: 'Gestión de Usuarios',
   'citas-dia': 'Citas del Día',
   'historial-medico': 'Historial Médico',
+  'historial-medico-archivado': 'Historiales Archivados',
 };
 
 function AppContent() {
@@ -74,6 +76,8 @@ function AppContent() {
         return <DayAppointmentsPage date={selectedDay} onNavigate={handleNavigate} />;
       case 'historial-medico':
         return <MedicalHistoryPage onNavigate={handleNavigate} />;
+      case 'historial-medico-archivado':
+        return <ArchivedHistoryPage onNavigate={handleNavigate} />;
       default:
         return <DashboardPage {...viewProps} />;
     }

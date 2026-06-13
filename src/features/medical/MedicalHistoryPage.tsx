@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FaFolderOpen, FaCalendarAlt, FaChevronDown, FaChevronUp, FaHistory, FaFilter, FaTimes } from 'react-icons/fa';
-import { medicalRecordApi, userApi } from '../../data/services/apiService';
-import type { MedicalRecord } from '../../data/services/apiService';
+import { FaFolderOpen, FaCalendarAlt, FaChevronDown, FaChevronUp, FaHistory, FaFilter, FaTimes, FaArchive } from 'react-icons/fa';
+import { medicalRecordApi, userApi, procedureApi } from '../../data/services/apiService';
+import type { MedicalRecord, Procedure } from '../../data/services/apiService';
 import { sanitizeDate } from '../../shared/utils';
 import { Card, Badge, Breadcrumbs, SearchBox, FormError } from '../../shared/ui';
 import { AppointmentDetailModal } from '../appointments/AppointmentDetailModal';
@@ -18,6 +18,7 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
   const [detailCitaId, setDetailCitaId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [proceduresList, setProceduresList] = useState<Procedure[]>([]);
 
   // Advanced filter state (no dueño filter — medical records don't have propietario info)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -30,12 +31,14 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
   const loadRecords = useCallback(async () => {
     setLoadError(null);
     try {
-      const [recs, users] = await Promise.all([
+      const [recs, users, procs] = await Promise.all([
         medicalRecordApi.getAll(),
         userApi.getAll(),
+        procedureApi.getAll(),
       ]);
       setRecords(recs);
       setUsersMap(Object.fromEntries(users.map(u => [u.username, u.nombre])));
+      setProceduresList(procs);
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Error al cargar los historiales médicos');
     }
@@ -49,6 +52,21 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
 
   const toggleExpand = (id: string) => {
     setExpandedId(prev => prev === id ? null : id);
+  };
+
+  const [archivingId, setArchivingId] = useState<string | null>(null);
+
+  const handleArchive = async (id: string) => {
+    setArchivingId(id);
+    try {
+      await medicalRecordApi.archive(id);
+      // Remove from local state immediately
+      setRecords((prev) => prev.filter((r) => r.id !== id));
+    } catch {
+      // silent
+    } finally {
+      setArchivingId(null);
+    }
   };
 
   const clearAdvancedFilters = () => {
@@ -108,6 +126,13 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
         <p className={styles.viewDesc}>
           Expedientes digitales con el historial clínico de los pacientes.
         </p>
+        <button
+          className={styles.archivedNavBtn}
+          onClick={() => onNavigate?.('historial-medico-archivado')}
+          type="button"
+        >
+          <FaArchive /> Ver Historiales Archivados
+        </button>
       </div>
 
       {loadError && <FormError message={loadError} />}
@@ -155,12 +180,21 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
                 </div>
                 <div className={styles.filterField}>
                   <label>Especie</label>
-                  <input
-                    type="text"
+                  <select
                     value={filterEspecie}
                     onChange={(e) => setFilterEspecie(e.target.value)}
-                    placeholder="Canino, Felino..."
-                  />
+                  >
+                    <option value="">Todas las especies</option>
+                    <option value="Canino">Canino</option>
+                    <option value="Felino">Felino</option>
+                    <option value="Ave">Ave</option>
+                    <option value="Roedor">Roedor</option>
+                    <option value="Reptil">Reptil</option>
+                    <option value="Equino">Equino</option>
+                    <option value="Bovino">Bovino</option>
+                    <option value="Porcino">Porcino</option>
+                    <option value="Otro">Otro</option>
+                  </select>
                 </div>
                 <div className={styles.filterField}>
                   <label>Fecha</label>
@@ -175,11 +209,17 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
                 <div className={styles.filterField}>
                   <label>Procedimiento</label>
                   <input
+                    list="procedure-list-mh"
                     type="text"
                     value={filterProcedimiento}
                     onChange={(e) => setFilterProcedimiento(e.target.value)}
                     placeholder="Nombre del procedimiento"
                   />
+                  <datalist id="procedure-list-mh">
+                    {proceduresList.map((p) => (
+                      <option key={p.id} value={p.nombre} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className={styles.filterField}>
                   <label>Hora</label>
@@ -228,6 +268,15 @@ export default function MedicalHistoryPage({ onNavigate }: MedicalHistoryPagePro
                         </>
                       )}
                     </div>
+                    <button
+                      className={styles.archiveBtn}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleArchive(record.id); }}
+                      disabled={archivingId === record.id}
+                      title="Archivar historial"
+                    >
+                      <FaArchive /> {archivingId === record.id ? 'Archivando...' : 'Archivar'}
+                    </button>
                     <button className={styles.expandBtn} type="button">
                       {expandedId === record.id ? <FaChevronUp /> : <FaChevronDown />}
                     </button>

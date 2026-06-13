@@ -253,23 +253,38 @@ export default function AppointmentListPage({ onNavigate }: AppointmentListPageP
               </div>
               <div className={styles.filterField}>
                 <label>Especie</label>
-                <input
-                  type="text"
+                <select
                   value={filterEspecie}
                   onChange={(e) => setFilterEspecie(e.target.value)}
-                  placeholder="Canino, Felino..."
-                />
+                >
+                  <option value="">Todas las especies</option>
+                  <option value="Canino">Canino</option>
+                  <option value="Felino">Felino</option>
+                  <option value="Ave">Ave</option>
+                  <option value="Roedor">Roedor</option>
+                  <option value="Reptil">Reptil</option>
+                  <option value="Equino">Equino</option>
+                  <option value="Bovino">Bovino</option>
+                  <option value="Porcino">Porcino</option>
+                  <option value="Otro">Otro</option>
+                </select>
               </div>
             </div>
             <div className={styles.filterRow}>
               <div className={styles.filterField}>
                 <label>Procedimiento</label>
                 <input
+                  list="procedure-list-apt"
                   type="text"
                   value={filterProcedimiento}
                   onChange={(e) => setFilterProcedimiento(e.target.value)}
                   placeholder="Nombre del procedimiento"
                 />
+                <datalist id="procedure-list-apt">
+                  {Object.values(proceduresMap).map((p) => (
+                    <option key={p.id} value={p.nombre} />
+                  ))}
+                </datalist>
               </div>
               <div className={styles.filterField}>
                 <label>Hora</label>

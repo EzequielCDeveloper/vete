@@ -12,13 +12,36 @@
 }
 
 .headerIcon {
-  color: var(--primary);
+  color: var(--warning);
 }
 
 .viewDesc {
   color: var(--text-secondary);
   font-size: 0.875rem;
   margin-top: 0.25rem;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition);
+  font-family: inherit;
+}
+
+.backBtn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-subtle);
 }
 
 .emptyState {
@@ -109,7 +132,7 @@
   color: var(--border);
 }
 
-.archiveBtn {
+.unarchiveBtn {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -126,38 +149,15 @@
   white-space: nowrap;
 }
 
-.archiveBtn:hover:not(:disabled) {
-  border-color: var(--warning);
-  color: var(--warning);
-  background: var(--warning-bg);
+.unarchiveBtn:hover:not(:disabled) {
+  border-color: var(--success);
+  color: var(--success);
+  background: var(--success-bg);
 }
 
-.archiveBtn:disabled {
+.unarchiveBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.archivedNavBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  font-weight: 500;
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: all var(--transition);
-  font-family: inherit;
-}
-
-.archivedNavBtn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: var(--primary-subtle);
 }
 
 .expandBtn {
@@ -174,24 +174,6 @@
 .expandBtn:hover {
   color: var(--primary);
   background: var(--primary-subtle);
-}
-
-.recordNotes {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  padding: 0.75rem;
-  background: var(--warning-bg);
-  border-radius: var(--radius);
-  font-size: 0.85rem;
-  color: var(--text);
-  line-height: 1.5;
-}
-
-.notesIcon {
-  color: var(--warning);
-  margin-top: 0.15rem;
-  flex-shrink: 0;
 }
 
 .citasList {
@@ -273,135 +255,6 @@
 .actionBtn:hover {
   background: var(--primary);
   color: white;
-}
-
-.searchSection {
-  margin-bottom: 1rem;
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
-
-.searchSection > :first-child {
-  flex: 1;
-}
-
-.filterToggle {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition);
-  font-family: inherit;
-  white-space: nowrap;
-}
-
-.filterToggle:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.filterToggleActive {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-}
-
-.filterToggleActive:hover {
-  background: var(--primary-hover);
-  opacity: 0.9;
-}
-
-.advancedFilters {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.filterRow {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.filterRow:last-of-type {
-  margin-bottom: 0;
-}
-
-.filterField {
-  flex: 1;
-}
-
-.filterField label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 0.3rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.filterField input,
-.filterField select {
-  width: 100%;
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-size: 0.85rem;
-  font-family: inherit;
-  background: white;
-  outline: none;
-  transition: border-color var(--transition);
-  box-sizing: border-box;
-}
-
-.filterField input:focus,
-.filterField select:focus {
-  border-color: var(--primary);
-}
-
-.filterActions {
-  margin-top: 0.75rem;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.clearFilters {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.75rem;
-  background: transparent;
-  color: var(--danger);
-  border: 1px solid var(--danger);
-  border-radius: var(--radius);
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition);
-  font-family: inherit;
-}
-
-.clearFilters:hover {
-  background: var(--danger);
-  color: white;
-}
-
-.noResults {
-  text-align: center;
-  color: var(--text-secondary);
-  padding: 2rem;
-  font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {

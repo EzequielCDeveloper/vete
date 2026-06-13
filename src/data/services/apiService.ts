@@ -278,6 +278,19 @@ export const medicalRecordApi = {
       body: JSON.stringify(data),
     });
   },
+  getArchived(): Promise<MedicalRecord[]> {
+    return request<MedicalRecord[]>('/medical-records/archived/all');
+  },
+  archive(id: string): Promise<{ success: boolean }> {
+    return request<{ success: boolean }>(`/medical-records/${id}/archive`, {
+      method: 'PATCH',
+    });
+  },
+  unarchive(id: string): Promise<{ success: boolean }> {
+    return request<{ success: boolean }>(`/medical-records/${id}/unarchive`, {
+      method: 'PATCH',
+    });
+  },
 };
 
 // ─── Users (admin) ────────────────────────────────────────────

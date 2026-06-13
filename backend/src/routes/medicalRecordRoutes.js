@@ -11,5 +11,8 @@ router.get('/patient/:patientId', auth, medicalRecordController.getByPatient);
 router.get('/:patientId/citas', auth, medicalRecordController.getCitasByPatient);
 router.post('/', auth, validate(medicalRecordSchema), medicalRecordController.create);
 router.post('/standalone', auth, validate(standaloneMedicalRecordSchema), medicalRecordController.createStandalone);
+router.get('/archived/all', auth, medicalRecordController.getArchived);
+router.patch('/:id/archive', auth, medicalRecordController.archive);
+router.patch('/:id/unarchive', auth, medicalRecordController.unarchive);
 
 module.exports = router;
